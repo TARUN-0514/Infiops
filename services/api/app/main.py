@@ -16,6 +16,8 @@ from app.api.routes import (
     calendar,
     devices,
     email,
+    finance,
+    fitness,
     health,
     integrations,
     knowledge,
@@ -140,6 +142,8 @@ def create_app() -> FastAPI:
         voice,
         devices,
         preferences,
+        finance,
+        fitness,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     return app

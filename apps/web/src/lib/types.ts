@@ -62,7 +62,7 @@ export type Approval = {
 };
 
 export type ChatEvent =
-  | { type: "run.started"; run_id: string; conversation_id: string; user_message: ChatMessage; job: string; provider: "local" | "cloud" }
+  | { type: "run.started"; run_id: string; conversation_id: string; user_message: ChatMessage; job: string; provider: "local" | "cloud"; cloud_blocked?: "local_data" }
   | { type: "memory.used"; sources: MemorySourceRef[] }
   | { type: "text.delta"; text: string }
   | { type: "tool.started"; id: string; name: string; risk: Risk; summary: string; decision: "allow" | "ask" | "deny" }

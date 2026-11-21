@@ -9,6 +9,15 @@ from app.models.ai import (
 )
 from app.models.audit import AuditLog
 from app.models.comms import CalendarEvent, EmailDraft, EmailMessage
+from app.models.finance import (
+    Budget,
+    Debt,
+    FinancialAccount,
+    RecurringPayment,
+    SavingsGoal,
+    Transaction,
+)
+from app.models.fitness import Exercise, Habit, HabitLog, HealthLog, WorkoutSession, WorkoutSet
 from app.models.integrations import (
     Briefing,
     ConnectedAccount,
@@ -27,14 +36,21 @@ __all__ = [
     "ApprovalRequest",
     "AuditLog",
     "Briefing",
+    "Budget",
     "CalendarEvent",
     "ConnectedAccount",
     "Conversation",
+    "Debt",
     "Device",
     "Document",
     "DocumentChunk",
     "EmailDraft",
     "EmailMessage",
+    "Exercise",
+    "FinancialAccount",
+    "Habit",
+    "HabitLog",
+    "HealthLog",
     "IntegrationSyncLog",
     "MemoryConflict",
     "MemoryItem",
@@ -45,12 +61,17 @@ __all__ = [
     "PermissionPolicy",
     "Project",
     "PushSubscription",
+    "RecurringPayment",
     "ResearchReport",
+    "SavingsGoal",
     "Task",
     "ToolExecution",
+    "Transaction",
     "Upload",
     "User",
     "UserPreferences",
     "UserSession",
     "WorkLog",
+    "WorkoutSession",
+    "WorkoutSet",
 ]

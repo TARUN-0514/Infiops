@@ -200,7 +200,9 @@ async def _run_turn(
                     "extract_memories",
                     user_id=str(user_id),
                     message_id=run.state["user_message_id"],
-                    cloud=body.cloud,
+                    # What the run actually used: secret chats and chats with
+                    # money or health data stay local for extraction too.
+                    cloud=bool(run.state.get("cloud")),
                 )
     except Exception:
         log.exception("chat_turn_failed", conversation_id=str(cid))

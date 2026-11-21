@@ -43,6 +43,14 @@ from app.services.storage import get_storage
 Emit = Callable[[dict[str, Any]], Awaitable[None]]
 HISTORY_LIMIT = 40
 
+LOCAL_ONLY_MEMORY = {"finance", "health"}
+
+CLOUD_HINT = (
+    "You are running on the cloud model. Finance, fitness and health tools are not available "
+    "here because that data stays on the owner's PC. If asked about them, say to turn off "
+    "Use cloud and ask again."
+)
+
 SYSTEM_STATIC = """You are NEXUS, a personal AI assistant for one owner. You help with their day-to-day life and professional work: tasks, projects, memory, email, calendar, documents, planning, research and writing.
 
 How you work:
@@ -161,6 +169,15 @@ async def _history(
     return out
 
 
+def _uses_tools(messages: list[dict[str, Any]], names: set[str]) -> bool:
+    return any(
+        isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") in names
+        for m in messages
+        if isinstance(m.get("content"), list)
+        for b in m["content"]
+    )
+
+
 async def _today_block(db: AsyncSession, user: User) -> list[str]:
     """Today's calendar, so the assistant can plan around it without a tool call."""
     from zoneinfo import ZoneInfo
@@ -192,11 +209,13 @@ async def _today_block(db: AsyncSession, user: User) -> list[str]:
 
 
 async def _context_block(
-    db: AsyncSession, user: User, query: str, privacy: Privacy
+    db: AsyncSession, user: User, query: str, privacy: Privacy, *, cloud: bool = False
 ) -> tuple[str, list[dict[str, Any]]]:
     hits = await mem.search(
         db, user.id, query, limit=6, allow_secret=privacy == "secret", touch=True
     )
+    if cloud:  # money and health memories stay on the local model
+        hits = [h for h in hits if h.item.category not in LOCAL_ONLY_MEMORY]
     open_tasks = await task_svc.list_tasks(
         db, user.id, status=["todo", "in_progress"], top_level=True, limit=10
     )
@@ -343,14 +362,17 @@ class Orchestrator:
             conversation.title = (text.strip().splitlines() or ["New conversation"])[0][:80]
         conversation.updated_at = datetime.now(UTC)
 
-        context, sources = await _context_block(db, user, text, privacy)
         history = await _history(db, conversation.id, user_msg.id)
         current = await _expand_blocks(db, blocks, inline_files=True)
+        # Finance and health results in this conversation never go to the cloud.
+        local_data = _uses_tools(history, self.registry.local_only_names())
+        use_cloud = cloud and privacy != "secret" and not local_data
+        context, sources = await _context_block(db, user, text, privacy, cloud=use_cloud)
         run.state = {
             "context": context,
             "sources": sources,
             "privacy": privacy,
-            "cloud": cloud and privacy != "secret",
+            "cloud": use_cloud,
             "voice": voice,
             "user_message_id": str(user_msg.id),
             "messages": [*history, {"role": "user", "content": current}],
@@ -366,6 +388,7 @@ class Orchestrator:
                 "user_message": message_out(user_msg),
                 "job": job,
                 "provider": "cloud" if run.state["cloud"] else "local",
+                **({"cloud_blocked": "local_data"} if cloud and local_data else {}),
             }
         )
         if sources:
@@ -388,7 +411,13 @@ class Orchestrator:
         pending.pop(tool_use_id, None)
         if approved:
             ctx = ToolContext(
-                db, user, run.id, run.conversation_id, uuid.UUID(run.state["user_message_id"])
+                db,
+                user,
+                run.id,
+                run.conversation_id,
+                uuid.UUID(run.state["user_message_id"]),
+                cloud=bool(run.state.get("cloud")),
+                voice=bool(run.state.get("voice")),
             )
             results.append(await self._execute(ctx, exe))
         else:
@@ -432,6 +461,8 @@ class Orchestrator:
         assert tool is not None
         exe.status = "running"
         try:
+            if tool.local_only and ctx.cloud:
+                raise ValueError("This tool only runs on the local model. Turn off Use cloud.")
             args = tool.input_model.model_validate(exe.input)
             async with self.db.begin_nested():
                 output = await tool.handler(ctx, args)
@@ -445,6 +476,7 @@ class Orchestrator:
             output, exe.status, exe.error = None, "failed", f"{type(exc).__name__}"
         else:
             exe.status = "succeeded"
+            output = json.loads(json.dumps(output, default=str))  # Decimals, dates -> JSON
         exe.output, exe.finished_at = output, datetime.now(UTC)
         await self.emit(
             {
@@ -474,11 +506,13 @@ class Orchestrator:
         state = run.state
         privacy: Privacy = state.get("privacy", "normal")
         cloud = bool(state.get("cloud"))
-        tools = self.registry.specs()
+        tools = self.registry.specs(cloud=cloud)
         system = [
             {"type": "text", "text": SYSTEM_STATIC, "cache_control": {"type": "ephemeral"}},
             {"type": "text", "text": state["context"]},
         ]
+        if cloud:
+            system.append({"type": "text", "text": CLOUD_HINT})
         if state.get("voice"):
             system.append({"type": "text", "text": VOICE_HINT + ("" if cloud else " /no_think")})
         messages: list[dict[str, Any]] = list(state["messages"])
@@ -596,7 +630,13 @@ class Orchestrator:
     ) -> tuple[list[dict[str, Any]], dict[str, str]]:
         db, settings = self.db, get_settings()
         ctx = ToolContext(
-            db, user, run.id, run.conversation_id, uuid.UUID(run.state["user_message_id"])
+            db,
+            user,
+            run.id,
+            run.conversation_id,
+            uuid.UUID(run.state["user_message_id"]),
+            cloud=bool(run.state.get("cloud")),
+            voice=bool(run.state.get("voice")),
         )
         results: list[dict[str, Any]] = []
         pending: dict[str, str] = {}

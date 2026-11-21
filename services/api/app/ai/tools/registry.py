@@ -33,6 +33,8 @@ class ToolContext:
     run_id: uuid.UUID | None = None
     conversation_id: uuid.UUID | None = None
     message_id: uuid.UUID | None = None
+    cloud: bool = False  # this run's model is the cloud one
+    voice: bool = False  # the owner spoke this request
 
 
 Handler = Callable[[ToolContext, Any], Awaitable[dict[str, Any]]]
@@ -49,6 +51,8 @@ class Tool:
     # Runs when the owner declines the call, to undo any "waiting" state the
     # request set up (for example a draft marked as waiting for approval).
     on_reject: Callable[[ToolContext, Any], Awaitable[None]] | None = None
+    # Finance and health data stay on the local model: hidden from cloud runs.
+    local_only: bool = False
 
     def spec(self) -> ToolSpec:
         schema = self.input_model.model_json_schema()
@@ -71,12 +75,17 @@ class ToolRegistry:
     def all(self) -> list[Tool]:
         return sorted(self._tools.values(), key=lambda t: t.name)
 
-    def specs(self, exclude_risks: set[str] | None = None) -> list[ToolSpec]:
+    def specs(self, exclude_risks: set[str] | None = None, cloud: bool = False) -> list[ToolSpec]:
         return [
             t.spec()
             for t in self.all()
-            if t.risk != "forbidden" and t.risk not in (exclude_risks or set())
+            if t.risk != "forbidden"
+            and t.risk not in (exclude_risks or set())
+            and not (cloud and t.local_only)
         ]
+
+    def local_only_names(self) -> set[str]:
+        return {t.name for t in self._tools.values() if t.local_only}
 
 
 def clamp(risk: Risk, policy: Decision | None) -> Decision:
