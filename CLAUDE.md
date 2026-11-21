@@ -11,9 +11,11 @@ You are the principal engineer building NEXUS, a personal AI operating system fo
 - Data: PostgreSQL 16 + pgvector, Redis 7, S3-compatible storage (MinIO locally).
 - Infra: Docker Compose for dev; Dockerfiles per service; GitHub Actions CI (lint, type-check, test, build, dependency and container scan).
 
-## AI layer
-- All model calls go through services/ai/gateway. Config maps each job to a primary and a fallback model: orchestrator -> claude-sonnet-5-5 (claude-opus-5-5 for long plans); routing and memory extraction -> claude-haiku-5-5; research and coding -> claude-opus-5-5; voice -> OpenAI Realtime or local Whisper + Piper; embeddings -> bge-m3 via Ollama (1024 dimensions); private or secret data -> local Ollama model only. No model ids in code.
-- The gateway handles timeouts, one retry then fallback, prompt caching, token and cost logging to model_usage_logs, and per-run and per-day budgets.
+## AI layer (local-first)
+- All model calls go through services/api/app/ai/gateway.py. **Local-first:** every job (chat, plan, fast) runs by default on the owner's PC through an OpenAI-compatible server (Ollama or LM Studio), with Qwen3 14B Q4 as the default and bge-m3 embeddings (1024 dimensions). This costs nothing and keeps data on the machine.
+- Cloud (Claude: claude-sonnet-5-5 for chat, claude-opus-5-5 for hard plans, claude-haiku-5-5 for fast jobs) is optional and off by default (NEXUS_CLOUD_ENABLED). The owner turns it on per message. It has a daily token cap, and secret data never goes to it. No model ids in code; they live in settings.
+- The gateway handles provider choice, one cloud fallback down the ladder, prompt caching, token and cost logging to model_usage_logs (cost only when a price table is configured), and the cloud budget.
+- Voice (phase 3): local whisper.cpp (Vulkan) and Piper.
 - Agents are plain tool-use loops whose state is checkpointed in agent_runs.state so a run can pause for approval and resume. LangGraph may be added later for the automation engine only.
 
 ## Non-negotiables

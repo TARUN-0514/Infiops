@@ -19,6 +19,11 @@ dependencies = [
   "redis>=5.2",
   "structlog>=24.4",
   "arq>=0.28.0",
+  "anthropic>=2.12.0",
+  "httpx>=0.28.1",
+  "python-dateutil>=4.0.0",
+  "pgvector>=0.5.1",
+  "python-multipart>=0.0.34",
 ]
 
 [dependency-groups]
@@ -28,6 +33,7 @@ dev = [
   "httpx>=0.28",
   "ruff>=0.8",
   "mypy>=1.13",
+  "types-python-dateutil>=2.9.0.20261116",
 ]
 
 [build-system]
@@ -54,6 +60,10 @@ ignore = ["S101"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "E501"]
 "alembic/**" = ["E402", "E501"]
+# prompt text reads better unwrapped
+"app/ai/memory_agent.py" = ["E501"]
+"app/ai/task_parser.py" = ["E501"]
+"app/ai/orchestrator.py" = ["E501"]
 
 [tool.mypy]
 strict = true

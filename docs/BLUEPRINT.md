@@ -1,5 +1,7 @@
 # NEXUS AI Merged Blueprint
 
+> **Update, 2026-11-21: local-first.** NEXUS now runs every AI job on the owner's PC by default (Ollama or LM Studio, Qwen3 14B Q4, bge-m3), at no cost. Cloud models are an optional per-message switch with a daily cap, for very hard tasks only. Where this document says a job uses a Claude model, read that as the cloud option. See docs/phases/PHASE-1.md and CLAUDE.md.
+
 Version of Nov 21, 2026. Live doc with diagrams: https://claude.ai/artifact/9Dsijbp4XnNVHCEWj8fL1h
 
 ## Overview

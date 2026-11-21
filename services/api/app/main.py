@@ -9,10 +9,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, health
+from app.api.routes import assistant, auth, health, memory, work
 from app.core.config import get_settings
 from app.core.logging import configure_logging, log
 from app.db.session import dispose_engine
+from app.services.jobs import close_jobs
 from app.services.redis import close_redis
 
 API_PREFIX = "/api/v1"
@@ -36,6 +37,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
     await dispose_engine()
     await close_redis()
+    await close_jobs()
 
 
 def create_app() -> FastAPI:
@@ -110,6 +112,9 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(auth.router, prefix=API_PREFIX)
+    app.include_router(assistant.router, prefix=API_PREFIX)
+    app.include_router(memory.router, prefix=API_PREFIX)
+    app.include_router(work.router, prefix=API_PREFIX)
     return app
 
 

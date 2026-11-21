@@ -73,9 +73,10 @@ export function refreshSession(): Promise<TokenResponse | null> {
   return refreshing;
 }
 
-type Options = { method?: string; body?: unknown; auth?: boolean };
+type Options = { method?: string; body?: unknown; auth?: boolean; form?: FormData };
 
-export async function api<T>(path: string, { method = "GET", body, auth = true }: Options = {}): Promise<T> {
+/** Send a request with the access token, refreshing once on 401. Returns the raw response. */
+export async function rawFetch(path: string, { method = "GET", body, auth = true, form }: Options = {}): Promise<Response> {
   const send = () => {
     const headers: Record<string, string> = {};
     if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -84,7 +85,7 @@ export async function api<T>(path: string, { method = "GET", body, auth = true }
       method,
       headers,
       credentials: "same-origin",
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
   };
 
@@ -99,6 +100,11 @@ export async function api<T>(path: string, { method = "GET", body, auth = true }
     throw new ApiError(0, "network_error", "Can't reach NEXUS. Check your connection.");
   }
   if (!res.ok) throw await parseError(res);
+  return res;
+}
+
+export async function api<T>(path: string, options: Options = {}): Promise<T> {
+  const res = await rawFetch(path, options);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
