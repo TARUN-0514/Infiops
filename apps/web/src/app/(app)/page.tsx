@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AskBar } from "@/components/home/ask-bar";
 import { TodayCard } from "@/components/home/today-card";
+import { InboxCard, ScheduleCard } from "@/components/home/schedule-card";
+import { BriefingHomeCard } from "@/components/briefing/briefing";
 import { Card, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
 import { CURRENT_PHASE, NAV } from "@/lib/nav";
@@ -43,7 +45,10 @@ export default function HomePage() {
       <AskBar />
 
       <div className="grid gap-4 md:grid-cols-2">
+        <BriefingHomeCard />
+        <ScheduleCard tz={tz} />
         <TodayCard tz={tz} />
+        <InboxCard />
         <Card>
           <CardTitle>Account security</CardTitle>
           {user.mfa_enabled ? (
@@ -73,7 +78,7 @@ export default function HomePage() {
       </div>
 
       <p className="text-sm text-muted">
-        Your briefing, schedule and emails appear here as those modules ship. Nothing on this page is sample data.
+        Everything on this page comes from your own calendar, tasks and email. Nothing is sample data.
       </p>
     </motion.div>
   );

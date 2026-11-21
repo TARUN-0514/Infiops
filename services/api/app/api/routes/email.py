@@ -69,8 +69,15 @@ def draft_out(d: EmailDraft) -> dict[str, Any]:
 @router.get("/summary")
 async def summary(db: DB, auth: Auth) -> dict[str, Any]:
     account = await integ.google_account(db, auth.user.id)
+    broken = None
+    if account is None:
+        broken = next(
+            (a for a in await integ.list_accounts(db, auth.user.id) if a.provider == "google"),
+            None,
+        )
     return {
         "connected": account is not None,
+        "account_error": broken.last_error or "Reconnect Google." if broken else None,
         "account_email": account.account_email if account else None,
         "last_sync_at": account.last_sync_at.isoformat()
         if account and account.last_sync_at

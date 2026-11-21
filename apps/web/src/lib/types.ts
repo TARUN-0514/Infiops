@@ -158,3 +158,168 @@ export type Project = {
   open_tasks: number;
   done_tasks: number;
 };
+
+// --- Phase 2: integrations, email, calendar, knowledge, work log, briefing ---------
+
+export type SyncResult = { status: string; items: number; error: string | null; at: string } | null;
+
+export type ConnectedAccount = {
+  id: string;
+  provider: "google";
+  account_email: string;
+  status: "connected" | "error" | "revoked";
+  last_error: string | null;
+  last_test_at: string | null;
+  last_sync_at: string | null;
+  permissions: string[];
+  last_sync: { gmail: SyncResult; calendar: SyncResult };
+  connected_at: string;
+};
+
+export type Integrations = {
+  google: { configured: boolean; redirect_uri: string; permissions: string[] };
+  accounts: ConnectedAccount[];
+};
+
+export type EmailCategory = "action" | "reply" | "fyi" | "newsletter" | "promotion" | "other";
+
+export type EmailMessage = {
+  id: string;
+  thread_id: string;
+  from_name: string;
+  from_addr: string;
+  to: string[];
+  cc?: string[];
+  subject: string;
+  snippet: string;
+  body_text?: string;
+  received_at: string;
+  is_unread: boolean;
+  labels: string[];
+  category: EmailCategory | null;
+  priority: "low" | "normal" | "high";
+  needs_reply: boolean;
+  summary: string | null;
+  triaged: boolean;
+  replied_at: string | null;
+};
+
+export type EmailDraft = {
+  id: string;
+  reply_to_id: string | null;
+  to: string[];
+  cc: string[];
+  subject: string;
+  body: string;
+  status: "draft" | "pending_approval" | "sent" | "failed" | "discarded";
+  source: "manual" | "ai";
+  approval_id: string | null;
+  error: string | null;
+  sent_at: string | null;
+  updated_at: string;
+};
+
+export type EmailDetail = EmailMessage & { drafts: EmailDraft[]; thread: EmailMessage[] };
+
+export type EmailSummary = {
+  connected: boolean;
+  account_error: string | null;
+  account_email: string | null;
+  last_sync_at: string | null;
+  needs_reply: number;
+  unread: number;
+  important: number;
+  untriaged: number;
+  drafts: number;
+};
+
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  starts_at: string;
+  ends_at: string;
+  all_day: boolean;
+  status: string;
+  attendees: { email: string; name: string | null; response: string | null; self: boolean }[];
+  html_link: string | null;
+  source: "google" | "local" | "time_block";
+  google: boolean;
+  task_id: string | null;
+};
+
+export type CalendarRange = {
+  events: CalendarEvent[];
+  conflicts: [string, string][];
+  google_connected: boolean;
+  last_sync_at: string | null;
+};
+
+export type FreeSlot = { start: string; end: string; minutes: number };
+
+export type KbDocument = {
+  id: string;
+  title: string;
+  filename: string;
+  mime_type: string;
+  size: number;
+  category: string | null;
+  status: "processing" | "ready" | "failed";
+  error: string | null;
+  pages: number | null;
+  chars: number;
+  chunks: number;
+  summary: string | null;
+  created_at: string;
+  processed_at: string | null;
+  preview?: { ordinal: number; page: number | null; label: string | null; content: string }[];
+};
+
+export type Citation = {
+  n: number;
+  document_id: string;
+  title: string;
+  page: number | null;
+  where: string | null;
+  excerpt: string;
+  score?: number;
+};
+
+export type KbAnswer = { answer: string; citations: Citation[] };
+
+export type WorkLogEntry = {
+  id: string;
+  day: string;
+  content: string;
+  minutes: number | null;
+  project_id: string | null;
+  project: string | null;
+  task_id: string | null;
+  source: "manual" | "task" | "chat";
+  created_at: string;
+};
+
+export type Briefing = {
+  id: string;
+  kind: "morning" | "weekly_status";
+  for_date: string;
+  content: string;
+  data: Record<string, unknown>;
+  model: string | null;
+  written_by_model: boolean;
+  created_at: string;
+  read_at: string | null;
+};
+
+export type BriefingSettings = { enabled: boolean; time: string; push: boolean };
+
+export type AppNotification = {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+};
