@@ -243,6 +243,8 @@ class Agent:
                     try:
                         async for raw in ws:
                             await self.handle(json.loads(raw))
+                            if self.stopped.is_set():
+                                return
                     finally:
                         heartbeat.cancel()
             except Unpaired as exc:
@@ -280,5 +282,6 @@ class Agent:
         await self.stopped.wait()
         for t in tasks:
             t.cancel()
+        await asyncio.wait(tasks, timeout=3)
         if self.voice:
             await self.voice.interrupt()

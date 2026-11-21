@@ -16,16 +16,6 @@ export interface Player {
   stop(): void;
 }
 
-const WORKLET = `
-class Tap extends AudioWorkletProcessor {
-  process(inputs) {
-    const ch = inputs[0] && inputs[0][0];
-    if (ch) this.port.postMessage(ch.slice(0));
-    return true;
-  }
-}
-registerProcessor("nexus-tap", Tap);
-`;
 
 export class BrowserMic implements Mic {
   rate = 48000;
@@ -43,9 +33,7 @@ export class BrowserMic implements Mic {
     this.ctx = ctx;
     this.rate = ctx.sampleRate;
     const framer = new Framer(Math.round((ctx.sampleRate * FRAME_MS) / 1000));
-    const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
-    await ctx.audioWorklet.addModule(url);
-    URL.revokeObjectURL(url);
+    await ctx.audioWorklet.addModule("/voice-worklet.js"); // a file, so the CSP needs no blob: scripts
     const source = ctx.createMediaStreamSource(this.stream);
     const node = new AudioWorkletNode(ctx, "nexus-tap");
     node.port.onmessage = (e: MessageEvent<Float32Array>) => framer.push(e.data).forEach(onFrame);

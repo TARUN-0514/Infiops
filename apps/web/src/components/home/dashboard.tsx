@@ -1,8 +1,8 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, LayoutGrid, Rows3 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -22,20 +22,32 @@ const SIZES: { value: WidgetSize; label: string }[] = [
 export function Dashboard({ widgets }: { widgets: Widget[] }) {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["home-layout"], queryFn: () => api<HomeLayout>("/preferences/home") });
-  const save = useMutation({
-    mutationFn: (layout: HomeLayout) => api<HomeLayout>("/preferences/home", { method: "PUT", body: layout }),
-    onMutate: (layout: HomeLayout) => {
-      qc.setQueryData<HomeLayout>(["home-layout"], layout);
-    },
-  });
+  // Edits apply to the latest layout at once and are saved one after another, so quick clicks
+  // never overwrite each other.
+  const latest = useRef<HomeLayout | null>(null);
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const [saveError, setSaveError] = useState(false);
+  latest.current ??= q.data ?? null;
+  const save = (layout: HomeLayout) => {
+    latest.current = layout;
+    void qc.cancelQueries({ queryKey: ["home-layout"] });
+    qc.setQueryData<HomeLayout>(["home-layout"], layout);
+    chain.current = chain.current
+      .then(() => api<HomeLayout>("/preferences/home", { method: "PUT", body: layout }))
+      .then(() => setSaveError(false), () => setSaveError(true));
+  };
   const [editing, setEditing] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
 
-  const layout = q.data ?? DEFAULT_LAYOUT;
+  const layout = latest.current ?? q.data ?? DEFAULT_LAYOUT;
   const items = mergeLayout(widgets, layout.widgets);
   const byId = new Map(widgets.map((w) => [w.id, w]));
   const compact = layout.mode === "compact";
-  const commit = (next: HomeWidgetPref[], mode = layout.mode) => save.mutate({ mode, widgets: next });
+  /** Applies a change to the newest layout (not the one this render saw). */
+  const change = (fn: (list: HomeWidgetPref[]) => HomeWidgetPref[], mode?: HomeLayout["mode"]) => {
+    const base = latest.current ?? layout;
+    save({ mode: mode ?? base.mode, widgets: fn(mergeLayout(widgets, base.widgets)) });
+  };
   const visible = items.filter((w) => editing || !w.hidden);
   const hiddenCount = items.filter((w) => w.hidden).length;
 
@@ -50,7 +62,7 @@ export function Dashboard({ widgets }: { widgets: Widget[] }) {
                   key={m}
                   role="radio"
                   aria-checked={layout.mode === m}
-                  onClick={() => commit(items, m)}
+                  onClick={() => change((l) => l, m)}
                   className={cn("flex items-center gap-1 rounded-md px-2 py-1", layout.mode === m ? "bg-raised text-text" : "text-muted")}
                 >
                   {m === "expanded" ? <LayoutGrid className="size-3.5" aria-hidden /> : <Rows3 className="size-3.5" aria-hidden />}
@@ -58,14 +70,14 @@ export function Dashboard({ widgets }: { widgets: Widget[] }) {
                 </button>
               ))}
             </div>
-            <Button variant="ghost" className="h-8 px-2 text-xs" onClick={() => commit([], "expanded")}>Reset</Button>
+            <Button variant="ghost" className="h-8 px-2 text-xs" onClick={() => change(() => [], "expanded")}>Reset</Button>
           </>
         )}
-        <Button variant={editing ? "primary" : "secondary"} className="h-8 px-3 text-xs" onClick={() => setEditing((v) => !v)}>
+        <Button variant={editing ? "primary" : "secondary"} className="h-8 px-3 text-xs" disabled={!q.data} onClick={() => setEditing((v) => !v)}>
           {editing ? "Done" : "Customise"}
         </Button>
       </div>
-      {save.isError && <Alert>Couldn&apos;t save the layout. Try again.</Alert>}
+      {saveError && <Alert>Couldn&apos;t save the layout. Try again.</Alert>}
       {!editing && hiddenCount > 0 && <p className="text-right text-xs text-muted">{hiddenCount} hidden</p>}
       <div className={cn("grid grid-cols-1 md:grid-cols-6", compact ? "gap-3" : "gap-4")}>
         {visible.map((w) => {
@@ -85,7 +97,8 @@ export function Dashboard({ widgets }: { widgets: Widget[] }) {
               onDrop={(e) => {
                 e.preventDefault();
                 if (!dragId) return;
-                commit(moveWidget(items, items.findIndex((i) => i.id === dragId), index));
+                const from = dragId;
+                change((l) => moveWidget(l, l.findIndex((i) => i.id === from), l.findIndex((i) => i.id === w.id)));
                 setDragId(null);
               }}
               onDragEnd={() => setDragId(null)}
@@ -102,17 +115,20 @@ export function Dashboard({ widgets }: { widgets: Widget[] }) {
                 <div className="mb-2 flex flex-wrap items-center gap-1 text-xs">
                   <GripVertical className="size-4 cursor-grab text-muted" aria-hidden />
                   <span className="mr-auto font-medium">{def.title}</span>
-                  <button className="rounded p-1 text-muted hover:bg-raised disabled:opacity-30" disabled={index === 0} onClick={() => commit(moveWidget(items, index, index - 1))} aria-label={`Move ${def.title} up`}>
+                  <button className="rounded p-1 text-muted hover:bg-raised disabled:opacity-30" disabled={index === 0} onClick={() => change((l) => moveWidget(l, index, index - 1))} aria-label={`Move ${def.title} up`}>
                     <ArrowUp className="size-3.5" />
                   </button>
-                  <button className="rounded p-1 text-muted hover:bg-raised disabled:opacity-30" disabled={index === items.length - 1} onClick={() => commit(moveWidget(items, index, index + 1))} aria-label={`Move ${def.title} down`}>
+                  <button className="rounded p-1 text-muted hover:bg-raised disabled:opacity-30" disabled={index === items.length - 1} onClick={() => change((l) => moveWidget(l, index, index + 1))} aria-label={`Move ${def.title} down`}>
                     <ArrowDown className="size-3.5" />
                   </button>
                   <label className="sr-only" htmlFor={`size-${w.id}`}>Size of {def.title}</label>
-                  <select id={`size-${w.id}`} value={w.size} onChange={(e) => commit(updateWidget(items, w.id, { size: e.target.value as WidgetSize }))} className="h-7 rounded border border-border bg-surface px-1">
+                  <select id={`size-${w.id}`} value={w.size} onChange={(e) => {
+                    const size = e.target.value as WidgetSize;
+                    change((l) => updateWidget(l, w.id, { size }));
+                  }} className="h-7 rounded border border-border bg-surface px-1">
                     {SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
-                  <button className="rounded p-1 text-muted hover:bg-raised" onClick={() => commit(updateWidget(items, w.id, { hidden: !w.hidden }))} aria-label={w.hidden ? `Show ${def.title}` : `Hide ${def.title}`}>
+                  <button className="rounded p-1 text-muted hover:bg-raised" onClick={() => change((l) => updateWidget(l, w.id, { hidden: !l.find((x) => x.id === w.id)?.hidden }))} aria-label={w.hidden ? `Show ${def.title}` : `Hide ${def.title}`}>
                     {w.hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                   </button>
                 </div>

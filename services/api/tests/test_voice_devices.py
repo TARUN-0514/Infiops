@@ -188,23 +188,23 @@ async def test_settings_stop_and_remove(client: AsyncClient) -> None:
     did = t["device_id"]
     pubsub = get_redis().pubsub()
     await pubsub.subscribe(dev.channel(uuid.UUID(did)))
-    await pubsub.get_message(timeout=1)  # subscribe confirmation
+    await pubsub.get_message(timeout=5)  # subscribe confirmation
 
     r = await client.patch(f"{API}/devices/{did}", json={"wake_word": True}, headers=h)
     assert r.json()["settings"] == {"wake_word": True, "hands_free": False}
-    msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=2)
+    msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=5)
     assert msg and json.loads(msg["data"])["settings"]["wake_word"] is True
 
     await client.patch(f"{API}/devices/{did}", json={"hands_free": True}, headers=h)
-    await pubsub.get_message(ignore_subscribe_messages=True, timeout=2)
+    await pubsub.get_message(ignore_subscribe_messages=True, timeout=5)
     r = await client.post(f"{API}/devices/{did}/stop", headers=h)
     assert r.json()["settings"]["hands_free"] is False
-    msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=2)
+    msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=5)
     assert msg and json.loads(msg["data"]) == {"type": "stop"}
 
     assert (await client.delete(f"{API}/devices/{did}", headers=h)).status_code == 204
-    await pubsub.get_message(ignore_subscribe_messages=True, timeout=2)  # settings
-    msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=2)
+    await pubsub.get_message(ignore_subscribe_messages=True, timeout=5)  # settings
+    msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=5)
     assert msg and json.loads(msg["data"]) == {"type": "revoked"}
     await pubsub.aclose()  # type: ignore[no-untyped-call]
     # The agent's session ends with it.

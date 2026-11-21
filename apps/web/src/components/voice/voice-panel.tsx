@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Mic, Square, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { speakable } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { VoicePhase } from "@/lib/voice/controller";
 import { useVoice } from "./voice-provider";
@@ -52,7 +53,7 @@ export function VoicePanel() {
             <div className="min-w-0 flex-1 text-sm">
               <p className="text-xs font-medium text-muted">{LABEL[s.phase] || (s.error ? "Voice" : "Done")}</p>
               {s.heard && <p className="mt-1 font-medium">“{s.heard}”</p>}
-              {s.reply && <p className="mt-1 line-clamp-6 text-muted">{s.reply}</p>}
+              {s.reply && <p className="mt-1 line-clamp-6 text-muted">{speakable(s.reply)}</p>}
               {s.waitingApproval && (
                 <p className="mt-1 text-xs text-warn">
                   Waiting for your approval.{" "}
