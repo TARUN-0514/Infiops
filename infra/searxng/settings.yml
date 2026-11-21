@@ -1,0 +1,16 @@
+# SearXNG for NEXUS: a private metasearch server on your PC. NEXUS asks it for JSON results,
+# so no search API key or paid service is needed. Docs: https://docs.searxng.org
+use_default_settings: true
+general:
+  instance_name: "NEXUS search"
+server:
+  # Set SEARXNG_SECRET in .env (any long random string); it overrides this placeholder.
+  secret_key: "change-me-with-SEARXNG_SECRET"
+  limiter: false
+  image_proxy: false
+  public_instance: false
+search:
+  safe_search: 1
+  formats:
+    - html
+    - json

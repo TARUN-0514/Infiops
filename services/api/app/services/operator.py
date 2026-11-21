@@ -191,5 +191,7 @@ async def stop_all(db: AsyncSession, user_id: uuid.UUID) -> OperatorPolicy:
     policy.paused = True
     await save_policy(db, user_id, policy)
     for device in await _devices(db, user_id):
-        await dev.publish(device.id, {"type": "stop", "scope": "all", "at": datetime.now(UTC).isoformat()})
+        await dev.publish(
+            device.id, {"type": "stop", "scope": "all", "at": datetime.now(UTC).isoformat()}
+        )
     return policy

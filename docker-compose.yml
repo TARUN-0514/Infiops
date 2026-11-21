@@ -54,6 +54,7 @@ services:
       # Voice runs in the "voice" service unless you point these at whisper.cpp on your PC.
       NEXUS_STT_URL: ${NEXUS_STT_URL_DOCKER:-http://voice:8880/v1/audio/transcriptions}
       NEXUS_TTS_URL: ${NEXUS_TTS_URL_DOCKER:-http://voice:8880/v1/audio/speech}
+      NEXUS_SEARXNG_URL: ${NEXUS_SEARXNG_URL_DOCKER:-http://search:8080}
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: [uploads:/app/data]
     ports: ["8000:8000"]
@@ -75,6 +76,7 @@ services:
       # Voice runs in the "voice" service unless you point these at whisper.cpp on your PC.
       NEXUS_STT_URL: ${NEXUS_STT_URL_DOCKER:-http://voice:8880/v1/audio/transcriptions}
       NEXUS_TTS_URL: ${NEXUS_TTS_URL_DOCKER:-http://voice:8880/v1/audio/speech}
+      NEXUS_SEARXNG_URL: ${NEXUS_SEARXNG_URL_DOCKER:-http://search:8080}
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: [uploads:/app/data]
     depends_on:
@@ -89,6 +91,17 @@ services:
       VOICE_TTS_VOICE: ${NEXUS_TTS_VOICE:-en_US-lessac-medium}
       VOICE_PRELOAD: "1"
     volumes: [voices:/data]
+    restart: unless-stopped
+
+  # Private web search (SearXNG) for research. Free, no API key. Reachable on
+  # http://localhost:8888 for checking it by hand. SearXNG publishes date tags only;
+  # pin one from hub.docker.com/r/searxng/searxng/tags if you want fixed upgrades.
+  search:
+    image: searxng/searxng:latest
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-change-me}
+    volumes: ["./infra/searxng/settings.yml:/etc/searxng/settings.yml:ro"]
+    ports: ["127.0.0.1:8888:8080"]
     restart: unless-stopped
 
   web:

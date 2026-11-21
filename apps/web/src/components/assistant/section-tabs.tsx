@@ -10,7 +10,9 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/assistant", label: "Chat" },
   { href: "/assistant/memory", label: "Memory" },
+  { href: "/assistant/research", label: "Research" },
   { href: "/assistant/approvals", label: "Approvals" },
+  { href: "/assistant/activity", label: "Activity" },
 ];
 
 export function usePendingApprovals() {
@@ -21,7 +23,7 @@ export function SectionTabs() {
   const pathname = usePathname();
   const pending = usePendingApprovals().data?.length ?? 0;
   return (
-    <nav aria-label="Assistant sections" className="mb-6 flex gap-1 border-b border-border">
+    <nav aria-label="Assistant sections" className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
       {TABS.map((t) => {
         const active = t.href === "/assistant" ? pathname === "/assistant" : pathname.startsWith(t.href);
         return (
@@ -29,7 +31,7 @@ export function SectionTabs() {
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={cn("-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm", active ? "border-accent text-text" : "border-transparent text-muted hover:text-text")}
+            className={cn("-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm", active ? "border-accent text-text" : "border-transparent text-muted hover:text-text")}
           >
             {t.label}
             {t.label === "Approvals" && pending > 0 && (

@@ -15,7 +15,8 @@ used by chat and voice on the web, a Windows desktop app and a phone PWA.
 | `apps/web` | Next.js web app (also the UI inside the Tauri desktop app and the PWA) |
 | `apps/desktop` | Windows app (Tauri 2): window, tray, Ctrl+Shift+Space push-to-talk, notifications |
 | `services/voice` | Local voice server: Whisper speech recognition and Piper voice |
-| `services/local-agent` | `nexus-agent` for your PC: wake word, hands-free voice, link to NEXUS |
+| `services/local-agent` | `nexus-agent` for your PC: wake word, hands-free voice, computer control, link to NEXUS |
+| `infra/searxng` | Settings for the private search server used by research |
 | `docs` | Blueprint, phase plans and phase prompts |
 
 ## Run it on Windows (quick start)
@@ -79,6 +80,45 @@ uv tool install --python 3.12 ".[audio]"
 ```
 
 In NEXUS, open Settings › Voice and devices, press **Pair a PC**, and run the command it shows (`nexus-agent pair --code XXXX-XXXX`). Then run `nexus-agent run` (the Windows app starts it for you). Turn on **Wake word** or **Hands-free** for that PC in Settings. **Stop listening** there closes the microphone at once, and **Remove** ends the agent's access.
+
+## Computer control (apps, folders, browser, screen, Claude Code)
+
+NEXUS can work on your PC through the local agent. Everything is off until you allow it, in two places:
+
+1. **On the PC:** `nexus-agent control on`, then restart the agent. `nexus-agent control off` blocks it again, whatever the web settings say.
+2. **In NEXUS:** Settings › Computer control. Turn on Computer control, add the folders NEXUS may use (tick **Can write** only where it may create or move files) and the apps it may open (exact command, run without a shell). Turn on NEXUS's own browser, Claude Code or Screen control separately.
+
+Reading and listing run straight away. Writing or moving a file, browser actions, Claude Code and screen control each wait for your OK. NEXUS never deletes files. System folders, credential folders (`.ssh`, `.aws`) and the agent's own folder are refused on the PC even if you allow a parent folder. **Stop everything** (Settings › Computer control, or AI Assistant › Activity) cancels whatever is running on the PC and pauses control until you resume. Every action is listed under AI Assistant › Activity.
+
+Optional extras on the PC:
+
+```powershell
+uv tool install --python 3.12 ".[audio,browser,screen]"   # in services\local-agent
+playwright install chromium                               # NEXUS's own browser profile
+npm install -g @anthropic-ai/claude-code                  # for Claude Code runs
+```
+
+- **NEXUS's own browser** is Chromium with a separate profile in `%APPDATA%\NEXUS\browser-profile`. It never sees your own browser, passwords or sign-ins, and won't type into password fields.
+- **Claude Code** runs in an allowed project folder, plan-only unless you allow edits for that run. It uses your own Claude Code sign-in on the PC.
+- **Screen control** uses Claude's computer-use tool, so it needs cloud turned on (`NEXUS_CLOUD_ENABLED=true` and an API key) and sends screenshots to Claude. Move the mouse into a screen corner to stop it instantly.
+
+## Research and web search
+
+Research uses a private SearXNG search server on your PC. No API key or paid service:
+
+```bash
+docker compose up -d search        # http://localhost:8888
+```
+
+Set `SEARXNG_SECRET` in `.env` to any long random string. Ask in chat, or use AI Assistant › Research. NEXUS searches, reads up to five pages, and labels each finding **verified** (a page it read says so, with the source number), **assumption** or **opinion**. A claim the model marks verified without a page that backs it is downgraded on the server. NEXUS won't read pages on your home network or `localhost`.
+
+## GitHub (read-only)
+
+1. On GitHub, Settings › Developer settings › Fine-grained tokens, make a token for only the repositories you want, with **read-only** access to Contents, Pull requests and Issues.
+2. In `.env`: `NEXUS_GITHUB_TOKEN=github_pat_...` and `NEXUS_GITHUB_REPOS=["TARUN-0514/Infiops"]`.
+3. Settings › Integrations › GitHub › **Test**. It shows connected only when GitHub answers.
+
+NEXUS can then list and summarise pull requests and issues and review diffs. It can't comment, push or merge.
 
 ## Windows app
 

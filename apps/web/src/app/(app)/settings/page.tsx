@@ -224,6 +224,15 @@ export default function SettingsPage() {
             <Link href="/settings/devices" className="text-sm text-accent hover:underline">Open</Link>
           </div>
         </Card>
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>Computer control</CardTitle>
+              <p className="mt-1 text-sm text-muted">Choose the apps, folders and browser NEXUS may use on your PC, and stop it at any time.</p>
+            </div>
+            <Link href="/settings/computer" className="text-sm text-accent hover:underline">Open</Link>
+          </div>
+        </Card>
         <AiStatusCard />
         <ToolPermissions />
         <MemoryConsent />
