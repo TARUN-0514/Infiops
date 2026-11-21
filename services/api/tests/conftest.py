@@ -38,7 +38,7 @@ TABLES = (
     "agent_runs, tool_executions, approval_requests, permission_policies, model_usage_logs, "
     "memory_items, memory_sources, memory_conflicts, projects, tasks, uploads, "
     "connected_accounts, integration_sync_logs, notifications, push_subscriptions, briefings, "
-    "email_messages, email_drafts, calendar_events, documents, document_chunks, work_logs"
+    "email_messages, email_drafts, calendar_events, documents, document_chunks, work_logs, research_reports"
 )
 
 

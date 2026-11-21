@@ -144,6 +144,20 @@ async def process_document(_: dict[str, Any], *, document_id: str) -> str:
         return doc.status
 
 
+async def research_job(_: dict[str, Any], *, report_id: str) -> str:
+    from app.ai.gateway import get_gateway
+    from app.models import ResearchReport
+    from app.services import research
+
+    async with get_sessionmaker()() as db:
+        report = await db.get(ResearchReport, uuid.UUID(report_id))
+        if report is None or report.status != "running":
+            return "skipped"
+        await research.run(db, get_gateway(), report)
+        await db.commit()
+        return report.status
+
+
 async def purge_expired_sessions(_: dict[str, Any]) -> int:
     """Delete sessions that expired or were revoked more than 30 days ago."""
     cutoff = datetime.now(UTC) - timedelta(days=30)
@@ -175,6 +189,7 @@ class WorkerSettings:
         sync_all,
         briefing_tick,
         process_document,
+        research_job,
     ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(purge_expired_sessions, hour={3}, minute={15}),  # type: ignore[arg-type]

@@ -96,6 +96,15 @@ class Settings(BaseSettings):
     voice_max_upload_mb: int = 10
     pair_code_minutes: int = 10
 
+    # --- Research and coding ----------------------------------------------------
+    # Web search through a self-hosted SearXNG (JSON format enabled). Empty = no search.
+    searxng_url: str = "http://localhost:8888"
+    web_fetch_max_kb: int = 1500
+    # GitHub: a fine-grained personal access token, read-only by default, and the
+    # repositories NEXUS may see ("owner/name"). Empty token = GitHub off.
+    github_token: SecretStr = Field(default=SecretStr(""))
+    github_repos: list[str] = []
+
     @property
     def google_ready(self) -> bool:
         return bool(self.google_client_id and self.google_client_secret.get_secret_value())

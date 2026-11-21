@@ -68,6 +68,8 @@ class AnthropicProvider:
                 }
                 for t in req.tools
             ]
+        if req.extra_tools:
+            params["tools"] = [*params.get("tools", []), *req.extra_tools]
         output_config: dict[str, Any] = {}
         if req.effort:
             output_config["effort"] = req.effort

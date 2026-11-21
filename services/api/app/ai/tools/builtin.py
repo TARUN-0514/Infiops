@@ -364,9 +364,10 @@ def build_registry() -> ToolRegistry:
             lambda a: "Forget a memory",
         )
     )
-    from app.ai.tools import comms
+    from app.ai.tools import comms, operator
 
     comms.register(r)
+    operator.register(r)
     return r
 
 

@@ -20,6 +20,7 @@ from app.api.routes import (
     integrations,
     knowledge,
     memory,
+    operator,
     preferences,
     voice,
     work,
@@ -130,6 +131,7 @@ def create_app() -> FastAPI:
     app.include_router(memory.router, prefix=API_PREFIX)
     app.include_router(work.router, prefix=API_PREFIX)
     for module in (
+        operator,  # before integrations: /integrations/github must win over /{account_id}
         integrations,
         email,
         calendar,
