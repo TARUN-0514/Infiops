@@ -64,6 +64,33 @@ class Settings(BaseSettings):
     jobs_inline: bool = False
     storage_dir: str = "./data/uploads"
     max_upload_mb: int = 10
+    # Optional local vision model (e.g. qwen2.5vl:7b) to read text from images in the
+    # knowledge base. Empty = images are stored but not read.
+    local_model_vision: str = ""
+    kb_max_upload_mb: int = 25
+
+    # --- Integrations -----------------------------------------------------------
+    # The address you open NEXUS at on the PC. OAuth redirects come back here.
+    public_web_url: str = "http://localhost:3000"
+    google_client_id: str = ""
+    google_client_secret: SecretStr = Field(default=SecretStr(""))
+    sync_interval_minutes: int = 10
+    email_sync_days: int = 14  # first Gmail sync looks back this far
+
+    # --- Notifications ----------------------------------------------------------
+    # Web Push (VAPID). Generate with: python -m app.cli vapid
+    vapid_public_key: str = ""
+    vapid_private_key: SecretStr = Field(default=SecretStr(""))
+    vapid_subject: str = "mailto:nexus@localhost"
+    briefing_default_time: str = "07:30"  # owner's local time
+
+    @property
+    def google_ready(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret.get_secret_value())
+
+    @property
+    def google_redirect_uri(self) -> str:
+        return f"{self.public_web_url.rstrip('/')}/api/v1/integrations/google/callback"
 
     def require_secrets(self) -> None:
         missing = [

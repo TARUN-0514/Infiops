@@ -9,7 +9,18 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import assistant, auth, health, memory, work
+from app.api.routes import (
+    assistant,
+    auth,
+    briefing,
+    calendar,
+    email,
+    health,
+    integrations,
+    knowledge,
+    memory,
+    work,
+)
 from app.core.config import get_settings
 from app.core.logging import configure_logging, log
 from app.db.session import dispose_engine
@@ -115,6 +126,8 @@ def create_app() -> FastAPI:
     app.include_router(assistant.router, prefix=API_PREFIX)
     app.include_router(memory.router, prefix=API_PREFIX)
     app.include_router(work.router, prefix=API_PREFIX)
+    for module in (integrations, email, calendar, knowledge, briefing):
+        app.include_router(module.router, prefix=API_PREFIX)
     return app
 
 

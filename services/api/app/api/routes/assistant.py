@@ -24,6 +24,7 @@ from app.models import (
     AgentRun,
     ApprovalRequest,
     Conversation,
+    EmailDraft,
     Message,
     ModelUsageLog,
     PermissionPolicy,
@@ -31,7 +32,7 @@ from app.models import (
     Upload,
     User,
 )
-from app.services import audit
+from app.services import approvals, audit
 from app.services.jobs import enqueue
 from app.services.storage import ALLOWED_TYPES, get_storage
 
@@ -263,6 +264,19 @@ async def list_approvals(
     return out
 
 
+async def _after_direct(db: DB, approval: ApprovalRequest, result: dict[str, Any]) -> None:
+    """Keep an email draft's status in step with its approval request."""
+    if approval.tool_name != "email_send":
+        return
+    draft = await db.get(EmailDraft, uuid.UUID(str(approval.input.get("draft_id"))))
+    if draft is None or draft.status == "sent":
+        return
+    if result["status"] == "failed":
+        draft.status, draft.error = "failed", result.get("error")
+    elif result["status"] == "rejected":
+        draft.status, draft.approval_id = "draft", None
+
+
 class DecideIn(BaseModel):
     approve: bool
 
@@ -292,6 +306,13 @@ async def decide_approval(
         target=str(approval.id),
         tool=approval.tool_name,
     )
+    if approval.run_id is None:
+        # Started from a page (e.g. an email's Send button), not from a chat run.
+        result = await approvals.decide(db, get_registry(), auth.user, approval, body.approve)
+        await _after_direct(db, approval, result)
+        await db.commit()
+        await db.refresh(approval)
+        return {"approval": approval_out(approval), "message": None, "result": result}
     try:
         await Orchestrator(db, get_gateway(), get_registry(), emit).resume(
             auth.user, approval, body.approve
