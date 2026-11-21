@@ -50,6 +50,8 @@ class ModelRequest:
     max_tokens: int = 16000
     effort: str | None = None
     json_schema: dict[str, Any] | None = None  # structured output
+    # Provider-defined tools passed through as-is (cloud only), e.g. the computer toolset.
+    extra_tools: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ModelUnavailableError(Exception):

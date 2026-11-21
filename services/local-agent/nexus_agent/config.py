@@ -27,6 +27,9 @@ class AgentConfig:
     wake_word_model: str = "hey_jarvis"
     # Microphone level (0-1 RMS) that counts as speech. Raise it in a noisy room.
     speech_threshold: float = 0.015
+    # Computer control is off on this PC until the owner runs `nexus-agent control on`,
+    # whatever NEXUS's settings say.
+    control: bool = False
     extra: dict[str, str] = field(default_factory=dict)
 
     @property

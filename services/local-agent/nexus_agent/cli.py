@@ -89,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--no-audio", action="store_true", help="link only, no microphone")
     sub.add_parser("status", help="check the pairing")
     sub.add_parser("unpair", help="forget the pairing on this PC")
+    c = sub.add_parser("control", help="allow or block computer control on this PC")
+    c.add_argument("state", choices=["on", "off", "status"])
     args = parser.parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -99,6 +101,19 @@ def main(argv: list[str] | None = None) -> int:
         cfg.device_id = cfg.refresh_token = ""
         cfg.save()
         print("Forgotten. Also remove the device in NEXUS Settings > Devices.")
+        return 0
+    if args.cmd == "control":
+        cfg = AgentConfig.load()
+        if args.state != "status":
+            cfg.control = args.state == "on"
+            cfg.save()
+        if cfg.control:
+            print(
+                "Computer control is allowed on this PC. NEXUS can still only use the apps and\n"
+                "folders you allow in Settings > Computer control. Restart the agent to apply."
+            )
+        else:
+            print("Computer control is blocked on this PC. Restart the agent to apply.")
         return 0
     handler = {"pair": _pair, "run": _run, "status": _status}[args.cmd]
     try:

@@ -20,6 +20,7 @@ from app.db.session import get_sessionmaker
 from app.models import Device, UserSession
 from app.services import auth as auth_service
 from app.services import devices as svc
+from app.services import operator
 from app.services.rate_limit import enforce_rate_limit
 from app.services.redis import get_redis
 
@@ -181,6 +182,9 @@ async def _ws_device(websocket: WebSocket) -> uuid.UUID | None:
 
 async def _handle(device_id: uuid.UUID, msg: dict[str, Any]) -> None:
     kind = msg.get("type")
+    if kind == "result":
+        await operator.deliver_result(device_id, str(msg.get("id", "")), msg)
+        return
     if kind == "hello":
         caps = msg.get("capabilities")
         async with get_sessionmaker()() as db:
@@ -207,6 +211,8 @@ async def device_socket(websocket: WebSocket) -> None:
         device = await db.get(Device, device_id)
         assert device is not None
         await websocket.send_json(svc.settings_message(device))
+        policy = await operator.get_policy(db, device.user_id)
+        await websocket.send_json({"type": "policy", "policy": policy.model_dump()})
     await svc.set_presence(device_id, {"mic": "off"})
     pubsub = get_redis().pubsub()
     await pubsub.subscribe(svc.channel(device_id))

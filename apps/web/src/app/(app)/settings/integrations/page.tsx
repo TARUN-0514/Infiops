@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { GithubIntegration } from "@/components/settings/github";
 import { GoogleIntegration, PushSettings } from "@/components/settings/integrations";
 
 export default function IntegrationsPage() {
@@ -11,6 +12,7 @@ export default function IntegrationsPage() {
         <Link href="/settings" className="text-sm text-accent hover:underline">Back to settings</Link>
       </PageHeader>
       <GoogleIntegration />
+      <GithubIntegration />
       <PushSettings />
     </div>
   );

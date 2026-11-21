@@ -18,6 +18,7 @@ from app.models.integrations import (
 )
 from app.models.knowledge import Document, DocumentChunk
 from app.models.memory import MemoryConflict, MemoryItem, MemorySource
+from app.models.research import ResearchReport
 from app.models.user import Device, User, UserPreferences, UserSession
 from app.models.work import Project, Task, Upload, WorkLog
 
@@ -44,6 +45,7 @@ __all__ = [
     "PermissionPolicy",
     "Project",
     "PushSubscription",
+    "ResearchReport",
     "Task",
     "ToolExecution",
     "Upload",

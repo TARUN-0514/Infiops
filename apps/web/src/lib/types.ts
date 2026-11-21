@@ -347,3 +347,67 @@ export type VoiceStatus = { enabled: boolean; stt: VoiceServerStatus; tts: Voice
 export type WidgetSize = "s" | "m" | "l";
 export type HomeWidgetPref = { id: string; size: WidgetSize; hidden: boolean };
 export type HomeLayout = { mode: "compact" | "expanded"; widgets: HomeWidgetPref[] };
+
+// --- Phase 4: computer control, research, GitHub -------------------------------------
+
+export type AllowedApp = { name: string; command: string };
+export type AllowedFolder = { path: string; write: boolean };
+export type OperatorPolicy = {
+  enabled: boolean;
+  apps: AllowedApp[];
+  folders: AllowedFolder[];
+  browser: boolean;
+  screen: boolean;
+  claude_code: boolean;
+  paused: boolean;
+};
+export type OperatorDevice = {
+  id: string;
+  name: string;
+  online: boolean;
+  operator: boolean;
+  browser: boolean;
+  screen: boolean;
+  claude_code: boolean;
+};
+export type OperatorState = { policy: OperatorPolicy; devices: OperatorDevice[] };
+
+export type ActivityItem = {
+  id: string;
+  tool: string;
+  risk: Risk;
+  status: "pending_approval" | "running" | "succeeded" | "failed" | "rejected" | "denied";
+  summary: string;
+  input: Record<string, unknown>;
+  output: Record<string, unknown> | null;
+  error: string | null;
+  run_id: string | null;
+  created_at: string;
+  finished_at: string | null;
+};
+
+export type FindingLabel = "verified" | "assumption" | "opinion";
+export type ResearchFinding = { claim: string; label: FindingLabel; sources: number[]; note: string };
+export type ResearchSource = { n: number; url: string; title: string; read: boolean; error?: string };
+export type ResearchReport = {
+  id: string;
+  question: string;
+  status: "running" | "done" | "failed";
+  cloud: boolean;
+  summary: string | null;
+  findings: ResearchFinding[];
+  sources: ResearchSource[];
+  queries: string[];
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
+};
+
+export type GithubStatus = { configured: boolean; repos: string[] };
+export type GithubTest = {
+  configured: boolean;
+  connected: boolean;
+  login?: string;
+  repos: { repo: string; ok: boolean; private?: boolean; error?: string }[];
+  error: string | null;
+};

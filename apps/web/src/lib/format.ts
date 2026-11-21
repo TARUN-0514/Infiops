@@ -36,6 +36,23 @@ export const TOOL_LABEL: Record<string, string> = {
   calendar_time_block: "Block time for a task",
   kb_search: "Search documents",
   worklog_add: "Add to the work log",
+  desktop_open_app: "Open an app on your PC",
+  desktop_open_url: "Open a link on your PC",
+  files_list: "List a folder on your PC",
+  files_read: "Read a file on your PC",
+  files_write: "Write a file on your PC",
+  files_move: "Move a file on your PC",
+  browser_read: "Read a page in NEXUS's browser",
+  browser_act: "Use a page in NEXUS's browser",
+  computer_use: "Use your screen",
+  claude_code_run: "Run Claude Code",
+  web_search: "Search the web",
+  web_fetch: "Read a web page",
+  research_run: "Research a question",
+  github_pulls: "List pull requests",
+  github_pull: "Read a pull request",
+  github_issues: "List issues",
+  github_issue: "Read an issue",
 };
 
 function dayKey(d: Date, tz: string) {
