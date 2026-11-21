@@ -59,7 +59,7 @@ class UserSession(UUIDPk, CreatedAt, Base):
 
 
 class Device(UUIDPk, CreatedAt, Base):
-    """Desktop and phone clients. Pairing and local-agent capabilities arrive in phase 3."""
+    """A paired client such as the Windows local agent. It signs in through its own session."""
 
     __tablename__ = "devices"
     __table_args__ = (CheckConstraint("kind IN ('web','desktop','mobile')", name="kind"),)
@@ -71,5 +71,10 @@ class Device(UUIDPk, CreatedAt, Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     platform: Mapped[str | None] = mapped_column(String(32))
     capabilities: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    # Owner-chosen options for the device, e.g. {"wake_word": false, "hands_free": false}.
+    settings: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_sessions.id", ondelete="SET NULL"), index=True
+    )
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

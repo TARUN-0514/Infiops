@@ -14,11 +14,14 @@ from app.api.routes import (
     auth,
     briefing,
     calendar,
+    devices,
     email,
     health,
     integrations,
     knowledge,
     memory,
+    preferences,
+    voice,
     work,
 )
 from app.core.config import get_settings
@@ -126,7 +129,16 @@ def create_app() -> FastAPI:
     app.include_router(assistant.router, prefix=API_PREFIX)
     app.include_router(memory.router, prefix=API_PREFIX)
     app.include_router(work.router, prefix=API_PREFIX)
-    for module in (integrations, email, calendar, knowledge, briefing):
+    for module in (
+        integrations,
+        email,
+        calendar,
+        knowledge,
+        briefing,
+        voice,
+        devices,
+        preferences,
+    ):
         app.include_router(module.router, prefix=API_PREFIX)
     return app
 

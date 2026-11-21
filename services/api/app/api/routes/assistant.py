@@ -166,6 +166,7 @@ class SendIn(BaseModel):
     upload_ids: list[uuid.UUID] = Field(default_factory=list, max_length=5)
     cloud: bool = False
     privacy: Literal["normal", "sensitive", "secret"] = "normal"
+    voice: bool = False  # spoken turn: short plain-speech reply
 
 
 async def _run_turn(
@@ -186,7 +187,13 @@ async def _run_turn(
             ]
             orch = Orchestrator(db, get_gateway(), get_registry(), emit)
             run = await orch.start(
-                user, conv, body.text, uploads=uploads, privacy=body.privacy, cloud=body.cloud
+                user,
+                conv,
+                body.text,
+                uploads=uploads,
+                privacy=body.privacy,
+                cloud=body.cloud,
+                voice=body.voice,
             )
             if run.status == "completed":
                 await enqueue(

@@ -90,7 +90,7 @@ def _verify_totp(user: User, code: str, enc: Encryptor) -> bool:
     return False
 
 
-async def _issue(
+async def issue_session(
     db: AsyncSession, settings: Settings, user: User, *, user_agent: str | None, ip: str | None
 ) -> IssuedTokens:
     refresh = new_refresh_token()
@@ -140,7 +140,7 @@ async def login(
             raise AuthError("invalid_mfa_code", "That code is not valid.")
     if needs_rehash(user.password_hash):
         user.password_hash = hash_password(password)
-    tokens = await _issue(db, settings, user, user_agent=user_agent, ip=ip)
+    tokens = await issue_session(db, settings, user, user_agent=user_agent, ip=ip)
     audit.record(db, "auth.login", user_id=user.id, ip=ip, session_id=str(tokens.session.id))
     await db.commit()
     return tokens
