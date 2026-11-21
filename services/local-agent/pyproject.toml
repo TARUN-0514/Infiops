@@ -11,6 +11,10 @@ dependencies = [
 [project.optional-dependencies]
 # Microphone, speaker and wake word. Optional so tests run without audio hardware.
 audio = ["sounddevice>=0.5", "numpy>=1.26", "openwakeword>=0.6"]
+# NEXUS's own browser (separate profile). After installing: playwright install chromium
+browser = ["playwright>=1.48"]
+# Screen control (screenshots, mouse and keyboard) for the computer-use tool.
+screen = ["pyautogui>=0.9.54", "pillow>=10"]
 
 [project.scripts]
 nexus-agent = "nexus_agent.cli:main"
@@ -38,11 +42,11 @@ select = ["E", "F", "I", "B", "UP", "S", "ASYNC", "RUF"]
 ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106"]
+"tests/**" = ["S105", "S106", "ASYNC240"]
 
 [tool.mypy]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["sounddevice", "openwakeword", "openwakeword.*", "numpy"]
+module = ["sounddevice", "openwakeword", "openwakeword.*", "numpy", "playwright", "playwright.*", "pyautogui", "PIL", "PIL.*"]
 ignore_missing_imports = true

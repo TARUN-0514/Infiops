@@ -22,6 +22,7 @@ from nexus_agent import __version__
 from nexus_agent.api import Api, ApiError, Unpaired
 from nexus_agent.audio import FRAME_MS, Endpointer, SentenceSplitter, rms, to_wav
 from nexus_agent.devices import AudioIO, WakeWord
+from nexus_agent.operator import Operator
 
 log = logging.getLogger("nexus_agent")
 
@@ -196,6 +197,20 @@ class Agent:
             else None
         )
         self.stopped = asyncio.Event()
+        self.operator = Operator(control=api.config.control)
+        self.tools: dict[str, bool] = {}
+        if api.config.control:
+            from nexus_agent import browser, claude_code, screen
+
+            for name, mod in (
+                ("browser", browser),
+                ("screen", screen),
+                ("claude_code", claude_code),
+            ):
+                self.tools[name] = mod.available()
+                if self.tools[name]:
+                    mod.install(self.operator)
+        self.calls: set[asyncio.Task[None]] = set()
 
     async def send(self, msg: dict[str, Any]) -> None:
         if self.ws is not None:
@@ -211,14 +226,29 @@ class Agent:
             "microphone": self.audio is not None,
             "wake_word": self.wake is not None,
             "wake_word_model": self.wake.name if self.wake else "",
+            "operator": self.operator.control,
+            **self.tools,
         }
+
+    async def _call(self, msg: dict[str, Any]) -> None:
+        await self.send(await self.operator.handle_call(msg))
 
     async def handle(self, msg: dict[str, Any]) -> None:
         kind = msg.get("type")
         if kind == "settings" and self.voice:
             await self.voice.apply(msg.get("settings") or {})
-        elif kind == "stop" and self.voice:
-            await self.voice.stop()
+        elif kind == "policy" and isinstance(msg.get("policy"), dict):
+            self.operator.set_policy(msg["policy"])
+        elif kind == "call":
+            # Run alongside the socket so a long action (Claude Code) doesn't block Stop.
+            task = asyncio.create_task(self._call(msg))
+            self.calls.add(task)
+            task.add_done_callback(self.calls.discard)
+        elif kind == "stop":
+            if msg.get("scope") == "all":  # the computer-control kill switch
+                await self.operator.stop()
+            if self.voice:
+                await self.voice.stop()
         elif kind == "revoked":
             log.error("This PC was removed in NEXUS. Pair it again to use it.")
             self.stopped.set()
@@ -280,8 +310,9 @@ class Agent:
     async def run(self) -> None:
         tasks = [asyncio.create_task(self.link()), asyncio.create_task(self.listen())]
         await self.stopped.wait()
-        for t in tasks:
+        await self.operator.stop()
+        for t in [*tasks, *self.calls]:
             t.cancel()
-        await asyncio.wait(tasks, timeout=3)
+        await asyncio.wait([*tasks, *self.calls], timeout=3)
         if self.voice:
             await self.voice.interrupt()
