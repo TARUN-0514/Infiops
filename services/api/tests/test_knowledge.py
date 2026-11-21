@@ -1,3 +1,4 @@
+import functools
 import io
 
 from httpx import AsyncClient
@@ -9,7 +10,9 @@ from tests.conftest import auth_headers
 API = "/api/v1"
 
 
+@functools.cache
 def _docx() -> bytes:
+    """Built once: a .docx embeds save times, so two builds can differ by a second."""
     import docx
 
     d = docx.Document()
