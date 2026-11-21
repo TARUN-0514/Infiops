@@ -32,6 +32,39 @@ class Settings(BaseSettings):
     login_rate_limit: int = 10  # attempts per window
     rate_limit_window_seconds: int = 300
 
+    # --- AI layer -------------------------------------------------------------
+    # Local-first: every job runs on the owner's PC through an OpenAI-compatible server
+    # (Ollama http://localhost:11434/v1 or LM Studio http://localhost:1234/v1).
+    local_enabled: bool = True
+    local_base_url: str = "http://localhost:11434/v1"
+    local_model: str = "qwen3:14b"  # chat and tools
+    local_model_plan: str = ""  # optional bigger model for planning; empty = local_model
+    local_model_fast: str = ""  # optional smaller model for extraction; empty = local_model
+
+    # Cloud is optional and off by default. When enabled, the owner can send one
+    # request to the cloud ("Use cloud") for a hard task. Secret data never goes.
+    cloud_enabled: bool = False
+    anthropic_api_key: SecretStr = Field(default=SecretStr(""))  # or ANTHROPIC_API_KEY
+    cloud_model_chat: str = "claude-sonnet-5-5"
+    cloud_model_plan: str = "claude-opus-5-5"
+    cloud_model_fast: str = "claude-haiku-5-5"
+    anthropic_refusal_fallback: bool = True
+    cloud_daily_token_budget: int = 300_000  # hard cap per day across cloud calls
+
+    # Embeddings: "ollama" (bge-m3, 1024 dims), "none" (full-text only), "hash" (tests).
+    embedding_provider: Literal["ollama", "none", "hash"] = "ollama"
+    ollama_url: str = "http://localhost:11434"
+    embedding_model: str = "bge-m3"
+    # Optional price table, USD per million tokens: {"model": [input, output]}.
+    # Empty by default so NEXUS never shows a cost it cannot back up.
+    model_prices: dict[str, list[float]] = {}
+    max_agent_iterations: int = 8
+    approval_ttl_hours: int = 24
+    # Background jobs run inline (tests, or when no worker is running).
+    jobs_inline: bool = False
+    storage_dir: str = "./data/uploads"
+    max_upload_mb: int = 10
+
     def require_secrets(self) -> None:
         missing = [
             name
