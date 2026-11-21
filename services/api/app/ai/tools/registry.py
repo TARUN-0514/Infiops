@@ -46,6 +46,9 @@ class Tool:
     input_model: type[BaseModel]
     handler: Handler
     summary: Callable[[Any], str]  # one line shown on approval cards
+    # Runs when the owner declines the call, to undo any "waiting" state the
+    # request set up (for example a draft marked as waiting for approval).
+    on_reject: Callable[[ToolContext, Any], Awaitable[None]] | None = None
 
     def spec(self) -> ToolSpec:
         schema = self.input_model.model_json_schema()

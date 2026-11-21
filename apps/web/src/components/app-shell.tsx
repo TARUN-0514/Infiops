@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Brand } from "@/components/brand";
+import { NotificationBell } from "@/components/notifications/bell";
 import { useAuth } from "@/lib/auth";
 import { CURRENT_PHASE, NAV } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -66,9 +67,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
       <aside className="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-border bg-surface/60 p-4 backdrop-blur lg:flex">
-        <Link href="/" className="px-2 pt-1">
-          <Brand />
-        </Link>
+        <div className="flex items-center justify-between pl-2 pt-1">
+          <Link href="/">
+            <Brand />
+          </Link>
+          <NotificationBell />
+        </div>
         <div className="flex-1 overflow-y-auto">
           <NavList />
         </div>
@@ -77,9 +81,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-bg/80 px-4 py-3 backdrop-blur lg:hidden">
         <Brand />
-        <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-muted hover:bg-raised" aria-label="Open menu" aria-expanded={open}>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-muted hover:bg-raised" aria-label="Open menu" aria-expanded={open}>
           <Menu className="size-5" />
-        </button>
+          </button>
+        </div>
       </header>
 
       <AnimatePresence>

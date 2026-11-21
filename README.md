@@ -11,7 +11,7 @@ used by chat and voice on the web, a Windows desktop app and a phone PWA.
 
 | Path | What it is |
 | --- | --- |
-| `services/api` | FastAPI backend, Alembic migrations, Arq worker (`app/worker.py`) |
+| `services/api` | FastAPI backend, Alembic migrations, Arq worker (`app/worker.py`: mail and calendar sync, briefings, document reading) |
 | `apps/web` | Next.js web app (also the UI inside the Tauri desktop app and the PWA) |
 | `docs` | Blueprint, phase plans and phase prompts |
 
@@ -36,6 +36,24 @@ NEXUS is local-first: the AI runs on your own PC, so there's no cost and nothing
 To stop it, run `docker compose down`. Your data stays in Docker volumes.
 
 **Optional cloud for hard tasks.** Set `NEXUS_CLOUD_ENABLED=true` and `NEXUS_ANTHROPIC_API_KEY=…` in `.env`, then run `docker compose up -d` again. Chat then shows a **Use cloud** switch that you turn on for one message at a time. `NEXUS_CLOUD_DAILY_TOKEN_BUDGET` caps how much it can use per day.
+
+## Connect Google (email and calendar)
+
+NEXUS reads your mail, writes drafts and manages calendar events. It never sends an email until you approve that exact email.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project, then enable the **Gmail API** and the **Google Calendar API** (APIs & Services › Library).
+2. Open **Google Auth Platform** (OAuth consent screen). Choose *External*, fill in the app name and your email, and add yourself under **Test users**. Add these scopes: `gmail.readonly`, `gmail.compose`, `calendar.events`.
+3. Under **Clients**, create an OAuth client of type *Web application* with this authorised redirect URI:
+   `http://localhost:3000/api/v1/integrations/google/callback`
+   (If you open NEXUS at another address, use that address and set `NEXUS_PUBLIC_WEB_URL` to match.)
+4. Put the client id and secret in `.env` as `NEXUS_GOOGLE_CLIENT_ID` and `NEXUS_GOOGLE_CLIENT_SECRET`, then run `docker compose up -d` again.
+5. In NEXUS, open **Settings › Integrations** and press **Connect Google**. It shows *Connected* only after a real Gmail and Calendar call works.
+
+While the app is in *Testing* mode, Google asks you to sign in again every 7 days. That's expected for a personal app.
+
+**Reading images in documents (optional).** Run `ollama pull qwen2.5vl:7b` and set `NEXUS_LOCAL_MODEL_VISION=qwen2.5vl:7b`.
+
+**Notifications.** Turn them on in **Settings › Integrations**. Browsers allow push only on `localhost` or `https://`, so on your phone it works once NEXUS is served over HTTPS.
 
 ## Run locally (development)
 

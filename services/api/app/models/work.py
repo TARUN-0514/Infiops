@@ -1,9 +1,19 @@
 """Projects, tasks (with subtasks and recurrence) and uploaded files."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -70,3 +80,24 @@ class Upload(UUIDPk, CreatedAt, Base):
     size: Mapped[int] = mapped_column(Integer, nullable=False)
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     storage_key: Mapped[str] = mapped_column(String(300), nullable=False, unique=True)
+
+
+class WorkLog(UUIDPk, CreatedAt, Base):
+    """What the owner worked on. Entries come from typing, completed tasks or chat."""
+
+    __tablename__ = "work_logs"
+    __table_args__ = (Index("ix_work_logs_user_day", "user_id", "day"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    minutes: Mapped[int | None] = mapped_column(Integer)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), index=True
+    )
+    task_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="SET NULL")
+    )
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")

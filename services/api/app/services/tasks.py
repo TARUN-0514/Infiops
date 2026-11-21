@@ -9,7 +9,7 @@ from dateutil.rrule import rrulestr
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Project, Task
+from app.models import Project, Task, WorkLog
 from app.services import audit
 
 TASK_FIELDS = {
@@ -150,6 +150,17 @@ async def complete_task(db: AsyncSession, task: Task, tz: str) -> tuple[Task, Ta
         )
         db.add(follow_up)
         await db.flush()
+    # Completed work goes into the work log, which feeds the weekly status report.
+    db.add(
+        WorkLog(
+            user_id=task.user_id,
+            day=now.astimezone(ZoneInfo(tz)).date(),
+            content=f"Completed: {task.title}",
+            project_id=task.project_id,
+            task_id=task.id,
+            source="task",
+        )
+    )
     audit.record(db, "task.completed", user_id=task.user_id, target=str(task.id))
     return task, follow_up
 

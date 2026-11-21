@@ -125,8 +125,12 @@ class ModelGateway:
         privacy: Privacy = "normal",
         cloud: bool = False,
         on_text: TextCallback | None = None,
+        local_model: str | None = None,
     ) -> ModelResponse:
+        """local_model overrides the configured local model, e.g. a vision model."""
         provider, model = await self._pick(db, job, user_id, cloud, privacy)
+        if local_model and provider is self.providers.get("local"):
+            model = local_model
         req.model = model
         started = time.perf_counter()
 

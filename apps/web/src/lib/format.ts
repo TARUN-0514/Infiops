@@ -23,6 +23,19 @@ export const TOOL_LABEL: Record<string, string> = {
   memory_search: "Search memory",
   memory_remember: "Save to memory",
   memory_forget: "Forget a memory",
+  email_search: "Search email",
+  email_read: "Read an email",
+  email_draft_reply: "Draft a reply",
+  email_send: "Send an email",
+  email_follow_up: "Set a follow-up reminder",
+  calendar_list: "Check the calendar",
+  calendar_free_slots: "Find free time",
+  calendar_create_event: "Add a calendar event",
+  calendar_update_event: "Change a calendar event",
+  calendar_delete_event: "Delete a calendar event",
+  calendar_time_block: "Block time for a task",
+  kb_search: "Search documents",
+  worklog_add: "Add to the work log",
 };
 
 function dayKey(d: Date, tz: string) {
@@ -92,4 +105,24 @@ export function fromLocalInput(value: string, tz: string): string | null {
   const local = new Date(toLocalInput(asUtc.toISOString(), tz) + ":00Z");
   const offset = local.getTime() - asUtc.getTime();
   return new Date(asUtc.getTime() - offset).toISOString();
+}
+
+/** Markdown to plain sentences for text-to-speech. */
+export function speakable(md: string): string {
+  return md
+    .replace(/^#+\s*/gm, "")
+    .replace(/\*\*|__|`/g, "")
+    .replace(/^\s*[-*]\s+/gm, "")
+    .replace(/\s*\[(\d+)\]/g, "")
+    .replace(/\n{2,}/g, ". ")
+    .replace(/\n/g, ". ")
+    .replace(/([.!?:])\s*\./g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+export function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }

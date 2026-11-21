@@ -71,7 +71,7 @@ export const NAV: NavItem[] = [
   },
   {
     slug: "work", href: "/work", label: "Work", icon: Briefcase, phase: 2,
-    summary: "Work log, follow-ups, reports and your security workspaces.",
+    summary: "Work log and weekly status reports.",
     coming: ["Work log and weekly status report (phase 2)", "Vulnerability management and OSCP workspaces (phase 5)"],
   },
   {
@@ -87,7 +87,7 @@ export const NAV: NavItem[] = [
   { slug: "settings", href: "/settings", label: "Settings", icon: Settings, phase: 0, summary: "Profile, appearance and security.", coming: [] },
 ];
 
-export const CURRENT_PHASE = 1;
+export const CURRENT_PHASE = 2;
 
 export function findNav(slug: string): NavItem | undefined {
   return NAV.find((n) => n.slug === slug);

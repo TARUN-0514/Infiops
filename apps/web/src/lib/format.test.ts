@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeRecurrence, formatDue, fromLocalInput, toLocalInput } from "./format";
+import { describeRecurrence, formatBytes, formatDue, fromLocalInput, speakable, toLocalInput } from "./format";
 
 const TZ = "Asia/Kolkata";
 const NOW = new Date("2026-11-21T04:30:00Z"); // 10:00 IST, Saturday
@@ -31,5 +31,19 @@ describe("local datetime input", () => {
     expect(toLocalInput(iso, TZ)).toBe("2026-11-22T18:00");
     expect(fromLocalInput("2026-11-22T18:00", TZ)).toBe(iso);
     expect(fromLocalInput("", TZ)).toBeNull();
+  });
+});
+
+describe("speakable", () => {
+  it("turns markdown into sentences", () => {
+    expect(speakable("## Schedule\n- **10:00** Standup\n- Lunch [1]\n\nThat's it.")).toBe("Schedule. 10:00 Standup. Lunch. That's it.");
+  });
+});
+
+describe("formatBytes", () => {
+  it("picks a unit", () => {
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(2048)).toBe("2 KB");
+    expect(formatBytes(5 * 1024 * 1024)).toBe("5.0 MB");
   });
 });

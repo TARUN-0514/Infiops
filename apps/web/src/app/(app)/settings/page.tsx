@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Monitor, Moon, Sun } from "lucide-react";
 import QRCode from "qrcode";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { AiStatusCard, MemoryConsent, ToolPermissions } from "@/components/settings/ai-settings";
@@ -185,7 +186,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" description="Profile, appearance, AI, memory and security." />
+      <PageHeader title="Settings" description="Profile, appearance, integrations, AI, memory and security." />
       <div className="space-y-4">
         <Card>
           <CardTitle>Profile</CardTitle>
@@ -205,6 +206,15 @@ export default function SettingsPage() {
           </dl>
         </Card>
         <Appearance />
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>Integrations and notifications</CardTitle>
+              <p className="mt-1 text-sm text-muted">Connect Google for email and calendar, and turn on notifications.</p>
+            </div>
+            <Link href="/settings/integrations" className="text-sm text-accent hover:underline">Open</Link>
+          </div>
+        </Card>
         <AiStatusCard />
         <ToolPermissions />
         <MemoryConsent />
