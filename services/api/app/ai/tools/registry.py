@@ -34,6 +34,7 @@ class ToolContext:
     conversation_id: uuid.UUID | None = None
     message_id: uuid.UUID | None = None
     cloud: bool = False  # this run's model is the cloud one
+    voice: bool = False  # the owner spoke this request
 
 
 Handler = Callable[[ToolContext, Any], Awaitable[dict[str, Any]]]

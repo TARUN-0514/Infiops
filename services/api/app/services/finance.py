@@ -44,8 +44,12 @@ CATEGORIES = EXPENSE_CATEGORIES + INCOME_CATEGORIES
 # Simple keyword rules for imported rows and quick entry. The owner can change any category.
 KEYWORDS: list[tuple[str, str]] = [
     (r"swiggy|zomato|restaurant|cafe|domino|pizza|mcdonald|kfc|starbucks", "Food"),
-    (r"bigbasket|blinkit|zepto|dmart|grocer|instamart|more retail", "Groceries"),
-    (r"uber|ola|rapido|metro|irctc|bus|taxi|auto", "Transport"),
+    (
+        r"bigbasket|blinkit|zepto|dmart|grocer|instamart|more retail|bazaar|reliance fresh"
+        r"|supermarket|kirana",
+        "Groceries",
+    ),
+    (r"uber|\bola\b|rapido|\bmetro\b|irctc|\bbus\b|taxi|\bauto\b", "Transport"),
     (r"petrol|fuel|hpcl|bpcl|indian oil|shell", "Fuel"),
     (r"rent\b", "Rent"),
     (

@@ -434,3 +434,40 @@ async def test_cloud_model_cannot_call_local_tool(
 async def test_routes_need_auth(client: AsyncClient) -> None:
     await register_and_login(client)
     assert (await client.get(f"{API}/accounts")).status_code == 401
+
+
+async def test_money_memories_and_extraction_stay_local(
+    client: AsyncClient,
+    cloud: tuple[ScriptedProvider, ScriptedProvider],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.api.routes import assistant
+    from app.services import memory as mem
+
+    _, remote = cloud
+    h = await auth_headers(client)
+    async with get_sessionmaker()() as db:
+        user = await db.scalar(select(User))
+        assert user is not None
+        await mem.remember(db, user.id, "Home loan EMI is 32000 a month", category="finance")
+        await mem.remember(
+            db, user.id, "Prefers short answers about the loan", category="preference"
+        )
+        await db.commit()
+    jobs: list[dict[str, Any]] = []
+
+    async def fake_enqueue(name: str, **kw: Any) -> None:
+        jobs.append({"name": name, **kw})
+
+    monkeypatch.setattr(assistant, "enqueue", fake_enqueue)
+    cid = await _conv(client, h)
+    remote.push("Sure.")
+    await _send(client, h, cid, "tell me about the loan", cloud=True)
+    context = remote.requests[0].system[1]["text"]
+    assert "32000" not in context and "short answers" in context
+    assert jobs and jobs[-1]["cloud"] is True
+
+    # A secret chat asked with cloud on stays local, and so does its memory extraction.
+    cid2 = await _conv(client, h)
+    await _send(client, h, cid2, "private thing", cloud=True, privacy="secret")
+    assert jobs[-1]["cloud"] is False and len(remote.requests) == 1

@@ -95,6 +95,7 @@ export function ChatView() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [liveApprovals, setLiveApprovals] = useState<Approval[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sentInitial = useRef(false);
@@ -112,6 +113,7 @@ export function ChatView() {
 
   const send = useCallback(async (text: string, attachments: Attachment[], cloud: boolean) => {
     setError(null);
+    setNotice(null);
     setBusy(true);
     setLiveApprovals([]);
     let cid = activeId;
@@ -126,6 +128,7 @@ export function ChatView() {
         switch (e.type) {
           case "run.started":
             setDraft((d) => d && { ...d, user: e.user_message, provider: e.provider });
+            if (e.cloud_blocked) setNotice("This chat has money or health details, so it stayed on your PC. Start a new chat to use the cloud.");
             break;
           case "memory.used":
             setDraft((d) => d && { ...d, sources: e.sources });
@@ -138,7 +141,9 @@ export function ChatView() {
             break;
           case "tool.finished":
             setDraft((d) => d && { ...d, tools: d.tools.map((t) => (t.id === e.id ? { ...t, status: e.status } : t)) });
-            if (e.status === "succeeded") void qc.invalidateQueries({ queryKey: ["tasks"] });
+            if (e.status === "succeeded") {
+              for (const key of ["tasks", "finance", "fitness", "habits", "tracking"]) void qc.invalidateQueries({ queryKey: [key] });
+            }
             break;
           case "approval.required":
             setLiveApprovals((a) => [...a, e.approval]);
@@ -228,6 +233,7 @@ export function ChatView() {
           {pending.filter((a) => a.status === "pending").map((a) => (
             <ApprovalCard key={a.id} approval={a} onDecided={() => setLiveApprovals((l) => l.filter((x) => x.id !== a.id))} />
           ))}
+          {notice && <Alert tone="warn">{notice}</Alert>}
           {error && <Alert>{error}</Alert>}
           <div ref={bottomRef} />
         </div>

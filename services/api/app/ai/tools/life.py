@@ -47,7 +47,7 @@ async def finance_add_transaction(ctx: ToolContext, a: AddTxIn) -> dict[str, Any
         occurred_on=a.day or _today(ctx),
         description=a.description,
         category=a.category or finance.guess_category(a.description, a.kind),
-        source="chat",
+        source="voice" if ctx.voice else "chat",
     )
     return {
         "id": str(tx.id),
@@ -120,7 +120,11 @@ class MetricIn(_In):
 async def fitness_log_metric(ctx: ToolContext, a: MetricIn) -> dict[str, Any]:
     fitness.check_metric(a.metric, a.value)
     x = HealthLog(
-        user_id=ctx.user.id, day=a.day or _today(ctx), metric=a.metric, value=a.value, source="chat"
+        user_id=ctx.user.id,
+        day=a.day or _today(ctx),
+        metric=a.metric,
+        value=a.value,
+        source="voice" if ctx.voice else "chat",
     )
     ctx.db.add(x)
     await ctx.db.flush()

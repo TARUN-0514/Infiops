@@ -43,6 +43,8 @@ from app.services.storage import get_storage
 Emit = Callable[[dict[str, Any]], Awaitable[None]]
 HISTORY_LIMIT = 40
 
+LOCAL_ONLY_MEMORY = {"finance", "health"}
+
 CLOUD_HINT = (
     "You are running on the cloud model. Finance, fitness and health tools are not available "
     "here because that data stays on the owner's PC. If asked about them, say to turn off "
@@ -207,11 +209,13 @@ async def _today_block(db: AsyncSession, user: User) -> list[str]:
 
 
 async def _context_block(
-    db: AsyncSession, user: User, query: str, privacy: Privacy
+    db: AsyncSession, user: User, query: str, privacy: Privacy, *, cloud: bool = False
 ) -> tuple[str, list[dict[str, Any]]]:
     hits = await mem.search(
         db, user.id, query, limit=6, allow_secret=privacy == "secret", touch=True
     )
+    if cloud:  # money and health memories stay on the local model
+        hits = [h for h in hits if h.item.category not in LOCAL_ONLY_MEMORY]
     open_tasks = await task_svc.list_tasks(
         db, user.id, status=["todo", "in_progress"], top_level=True, limit=10
     )
@@ -358,16 +362,17 @@ class Orchestrator:
             conversation.title = (text.strip().splitlines() or ["New conversation"])[0][:80]
         conversation.updated_at = datetime.now(UTC)
 
-        context, sources = await _context_block(db, user, text, privacy)
         history = await _history(db, conversation.id, user_msg.id)
         current = await _expand_blocks(db, blocks, inline_files=True)
         # Finance and health results in this conversation never go to the cloud.
         local_data = _uses_tools(history, self.registry.local_only_names())
+        use_cloud = cloud and privacy != "secret" and not local_data
+        context, sources = await _context_block(db, user, text, privacy, cloud=use_cloud)
         run.state = {
             "context": context,
             "sources": sources,
             "privacy": privacy,
-            "cloud": cloud and privacy != "secret" and not local_data,
+            "cloud": use_cloud,
             "voice": voice,
             "user_message_id": str(user_msg.id),
             "messages": [*history, {"role": "user", "content": current}],
@@ -412,6 +417,7 @@ class Orchestrator:
                 run.conversation_id,
                 uuid.UUID(run.state["user_message_id"]),
                 cloud=bool(run.state.get("cloud")),
+                voice=bool(run.state.get("voice")),
             )
             results.append(await self._execute(ctx, exe))
         else:
@@ -630,6 +636,7 @@ class Orchestrator:
             run.conversation_id,
             uuid.UUID(run.state["user_message_id"]),
             cloud=bool(run.state.get("cloud")),
+            voice=bool(run.state.get("voice")),
         )
         results: list[dict[str, Any]] = []
         pending: dict[str, str] = {}

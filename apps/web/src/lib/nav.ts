@@ -87,7 +87,7 @@ export const NAV: NavItem[] = [
   { slug: "settings", href: "/settings", label: "Settings", icon: Settings, phase: 0, summary: "Profile, appearance and security.", coming: [] },
 ];
 
-export const CURRENT_PHASE = 4;
+export const CURRENT_PHASE = 5;
 
 export function findNav(slug: string): NavItem | undefined {
   return NAV.find((n) => n.slug === slug);

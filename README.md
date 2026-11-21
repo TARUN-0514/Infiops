@@ -120,6 +120,18 @@ Set `SEARXNG_SECRET` in `.env` to any long random string. Ask in chat, or use AI
 
 NEXUS can then list and summarise pull requests and issues and review diffs. It can't comment, push or merge.
 
+## Finance
+
+Finance › Transactions takes quick entries like `450 swiggy dinner` or `salary 85000`, read on the server with no model. You can also say it in chat or by voice ("spent 450 on Swiggy"). To import, download a CSV statement from your bank or card and drop it on Finance › Import. NEXUS finds the date, description and amount columns (including separate debit and credit columns or a Dr/Cr marker), shows a preview, and skips rows it already has, so importing the same file twice is safe.
+
+- Amounts, descriptions and notes are encrypted in the database with `NEXUS_ENCRYPTION_KEY`. Keep a copy of that key: without it the data can't be read.
+- Finance and health tools only run on the local model. When you turn on Use cloud, they're hidden, money and health memories are left out, and a chat that already has money or health details stays on your PC.
+- EMIs and bills send a reminder before they're due (hourly worker job, after 8 AM your time). Mark paid records the spending. NEXUS never pays anything.
+
+## Fitness
+
+Fitness logs workouts with sets (reps, weight, time or distance), body weight and measurements, calories, protein, water, sleep and habits, all encrypted the same way. This week compares with last week, and Month tracked shows which days have spending and workouts. It's tracking, not medical advice.
+
 ## Windows app
 
 The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.
