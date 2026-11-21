@@ -1,0 +1,2 @@
+PHASE 3, VOICE AND DESKTOP (weeks 11-13)
+Build the Tauri Windows app and the local agent; push-to-talk on web, desktop and PWA; streaming voice with interruption using the same orchestrator and tools; optional wake word and hands-free mode on desktop with a visible mic indicator; the customisable Home dashboard (drag, resize, hide, compact and expanded layouts); browser and desktop notifications. Gate: spoken replies start in under 1.5 seconds on my PC, and voice can do everything chat can.

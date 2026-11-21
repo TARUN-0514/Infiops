@@ -1,0 +1,2 @@
+PHASE 0, FOUNDATION (weeks 1-2)
+Set up the monorepo, Docker Compose (Postgres + pgvector, Redis, MinIO, Ollama), the FastAPI skeleton with health checks and structured logging, Alembic with the identity, security and audit tables, authentication (register, login, TOTP, sessions, refresh rotation), the Next.js shell with the 13-item navigation and design system, the generated API client, and CI. Gate: I can sign in on web and phone, CI is green, and docker compose up starts everything.

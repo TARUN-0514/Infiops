@@ -1,0 +1,2 @@
+PHASE 4, COMPUTER CONTROL, RESEARCH AND CODING (weeks 14-16)
+Build the Operator agent with allow-listed apps and folders, an isolated Playwright profile, computer use for the screen, execution logs and a kill switch; the Research agent with web search, citations, and labels for verified facts, assumptions and opinions; the Coding agent with scoped GitHub access and Claude Code runs on my PC. Gate: 10 real tasks completed with no action outside policy.
