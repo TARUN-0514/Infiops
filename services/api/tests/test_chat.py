@@ -110,8 +110,11 @@ async def test_sensitive_tool_waits_for_approval_then_runs(
         "run_id": approval["run_id"],
         "status": "waiting_approval",
     }
-    # not deleted yet
+    # not deleted yet, and the transcript shows the call as waiting
     assert (await client.get(f"{API}/tasks/{task_id}", headers=h)).status_code == 200
+    conv = (await client.get(f"{API}/chat/conversations/{cid}", headers=h)).json()
+    assert conv["messages"][-1]["tools"][0]["status"] == "pending_approval"
+    assert conv["pending_approvals"][0]["id"] == approval["id"]
     pending = (await client.get(f"{API}/approvals?status=pending", headers=h)).json()
     assert [p["id"] for p in pending] == [approval["id"]]
     assert pending[0]["conversation_id"] == cid

@@ -5,7 +5,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY . .
-RUN uv sync --frozen --no-dev && useradd --system --uid 10001 nexus
+RUN uv sync --frozen --no-dev && useradd --system --uid 10001 nexus \
+    && mkdir -p /app/data/uploads && chown -R nexus /app/data
 USER nexus
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000

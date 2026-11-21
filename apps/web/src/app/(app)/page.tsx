@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AskBar } from "@/components/home/ask-bar";
+import { TodayCard } from "@/components/home/today-card";
 import { Card, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
 import { CURRENT_PHASE, NAV } from "@/lib/nav";
@@ -38,7 +40,10 @@ export default function HomePage() {
         </p>
       </section>
 
+      <AskBar />
+
       <div className="grid gap-4 md:grid-cols-2">
+        <TodayCard tz={tz} />
         <Card>
           <CardTitle>Account security</CardTitle>
           {user.mfa_enabled ? (
@@ -68,7 +73,7 @@ export default function HomePage() {
       </div>
 
       <p className="text-sm text-muted">
-        Your briefing, schedule, tasks and emails appear here as each module ships. Nothing on this page is sample data.
+        Your briefing, schedule and emails appear here as those modules ship. Nothing on this page is sample data.
       </p>
     </motion.div>
   );

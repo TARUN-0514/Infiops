@@ -32,9 +32,12 @@ services:
     ports: ["9000:9000", "9001:9001"]
     volumes: [miniodata:/data]
 
+  # Local AI. On Windows with an AMD GPU, run Ollama or LM Studio natively instead (Docker
+  # can't use the GPU there); the API reaches it through host.docker.internal.
+  # On Linux with a supported GPU you can use this container: docker compose --profile ai up
   ollama:
     image: ollama/ollama:0.5.4
-    profiles: ["ai"]          # start with: docker compose --profile ai up
+    profiles: ["ai"]
     ports: ["11434:11434"]
     volumes: [ollama:/root/.ollama]
 
@@ -44,6 +47,12 @@ services:
     environment:
       NEXUS_DATABASE_URL: postgresql+asyncpg://nexus:${POSTGRES_PASSWORD:-nexus}@postgres:5432/nexus
       NEXUS_REDIS_URL: redis://redis:6379/0
+      # The model server runs on the host (Ollama :11434 or LM Studio :1234).
+      NEXUS_LOCAL_BASE_URL: ${NEXUS_LOCAL_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
+      NEXUS_OLLAMA_URL: ${NEXUS_OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      NEXUS_STORAGE_DIR: /app/data/uploads
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: [uploads:/app/data]
     ports: ["8000:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -56,17 +65,26 @@ services:
     environment:
       NEXUS_DATABASE_URL: postgresql+asyncpg://nexus:${POSTGRES_PASSWORD:-nexus}@postgres:5432/nexus
       NEXUS_REDIS_URL: redis://redis:6379/0
+      # The model server runs on the host (Ollama :11434 or LM Studio :1234).
+      NEXUS_LOCAL_BASE_URL: ${NEXUS_LOCAL_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
+      NEXUS_OLLAMA_URL: ${NEXUS_OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      NEXUS_STORAGE_DIR: /app/data/uploads
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: [uploads:/app/data]
     depends_on:
       api: { condition: service_started }
 
   web:
-    build: ./apps/web
+    build:
+      context: ./apps/web
+      args: { NEXUS_API_URL: "http://api:8000" }
     environment:
       NEXUS_API_URL: http://api:8000
     ports: ["3000:3000"]
     depends_on: [api]
 
 volumes:
+  uploads:
   pgdata:
   miniodata:
   ollama:

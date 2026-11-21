@@ -27,6 +27,7 @@ from app.models import (
     Message,
     ModelUsageLog,
     PermissionPolicy,
+    ToolExecution,
     Upload,
     User,
 )
@@ -94,9 +95,15 @@ async def get_conversation(cid: uuid.UUID, db: DB, auth: Auth) -> dict[str, Any]
         .join(AgentRun, AgentRun.id == ApprovalRequest.run_id)
         .where(AgentRun.conversation_id == cid, ApprovalRequest.status == "pending")
     )
+    status_rows = await db.execute(
+        select(ToolExecution.tool_use_id, ToolExecution.status)
+        .join(AgentRun, AgentRun.id == ToolExecution.run_id)
+        .where(AgentRun.conversation_id == cid)
+    )
+    tool_status = {tid: st for tid, st in status_rows if tid}
     return {
         "conversation": ConversationOut.model_validate(conv).model_dump(mode="json"),
-        "messages": [message_out(m) for m in msgs if m.role != "tool"],
+        "messages": [message_out(m, tool_status) for m in msgs if m.role != "tool"],
         "pending_approvals": [approval_out(a) for a in pending],
     }
 

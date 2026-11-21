@@ -217,8 +217,12 @@ async def _save_message(
     return msg
 
 
-def message_out(m: Message) -> dict[str, Any]:
-    tools = [{"id": b["id"], "name": b["name"]} for b in m.content if b.get("type") == "tool_use"]
+def message_out(m: Message, tool_status: dict[str, str] | None = None) -> dict[str, Any]:
+    tools = [
+        {"id": b["id"], "name": b["name"], "status": (tool_status or {}).get(b["id"], "succeeded")}
+        for b in m.content
+        if b.get("type") == "tool_use"
+    ]
     return {
         "id": str(m.id),
         "conversation_id": str(m.conversation_id),

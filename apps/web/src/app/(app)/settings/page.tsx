@@ -5,6 +5,7 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { AiStatusCard, MemoryConsent, ToolPermissions } from "@/components/settings/ai-settings";
 import { Button } from "@/components/ui/button";
 import { Alert, Card, CardTitle, Skeleton } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -184,7 +185,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" description="Profile, appearance and security." />
+      <PageHeader title="Settings" description="Profile, appearance, AI, memory and security." />
       <div className="space-y-4">
         <Card>
           <CardTitle>Profile</CardTitle>
@@ -204,6 +205,9 @@ export default function SettingsPage() {
           </dl>
         </Card>
         <Appearance />
+        <AiStatusCard />
+        <ToolPermissions />
+        <MemoryConsent />
         <TwoFactor />
         <Sessions />
       </div>
