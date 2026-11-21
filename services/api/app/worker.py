@@ -131,6 +131,23 @@ async def briefing_tick(_: dict[str, Any]) -> int:
     return delivered
 
 
+async def bill_reminders(_: dict[str, Any]) -> int:
+    """Hourly: remind each owner of bills and EMIs coming due, after 8 AM their time."""
+    from app.ai.timeutil import now_local
+    from app.models import User
+    from app.services import finance_plans
+
+    sent = 0
+    async with get_sessionmaker()() as db:
+        for user in list(await db.scalars(select(User))):
+            local = now_local(user.timezone)
+            if local.hour < 8:
+                continue
+            sent += await finance_plans.send_reminders(db, user, local.date())
+            await db.commit()
+    return sent
+
+
 async def process_document(_: dict[str, Any], *, document_id: str) -> str:
     from app.ai.gateway import get_gateway
     from app.services import knowledge as kb
@@ -188,6 +205,7 @@ class WorkerSettings:
         sync_account,
         sync_all,
         briefing_tick,
+        bill_reminders,
         process_document,
         research_job,
     ]
@@ -199,6 +217,7 @@ class WorkerSettings:
             run_at_startup=True,
         ),
         cron(briefing_tick, minute=set(range(0, 60, 5))),  # type: ignore[arg-type]
+        cron(bill_reminders, minute={7}),  # type: ignore[arg-type]
     ]
     on_startup = startup
     on_shutdown = shutdown
