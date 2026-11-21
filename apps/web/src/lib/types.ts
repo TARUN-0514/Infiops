@@ -323,3 +323,27 @@ export type AppNotification = {
   read: boolean;
   created_at: string;
 };
+
+// --- Phase 3: voice, devices, home layout ---------------------------------------------
+
+export type DeviceMic = "off" | "wake" | "listening" | "thinking" | "speaking";
+
+export type DeviceInfo = {
+  id: string;
+  name: string;
+  kind: string;
+  platform: string | null;
+  settings: { wake_word: boolean; hands_free: boolean };
+  capabilities: Record<string, string | boolean>;
+  online: boolean;
+  mic: DeviceMic;
+  last_seen_at: string | null;
+  created_at: string;
+};
+
+export type VoiceServerStatus = { ready: boolean; url: string; ms: number | null; error: string | null; voice?: string };
+export type VoiceStatus = { enabled: boolean; stt: VoiceServerStatus; tts: VoiceServerStatus };
+
+export type WidgetSize = "s" | "m" | "l";
+export type HomeWidgetPref = { id: string; size: WidgetSize; hidden: boolean };
+export type HomeLayout = { mode: "compact" | "expanded"; widgets: HomeWidgetPref[] };

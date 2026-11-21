@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Brand } from "@/components/brand";
 import { NotificationBell } from "@/components/notifications/bell";
+import { MicIndicator, VoiceButton } from "@/components/voice/voice-button";
+import { VoiceProvider } from "@/components/voice/voice-provider";
 import { useAuth } from "@/lib/auth";
 import { CURRENT_PHASE, NAV } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -65,13 +67,17 @@ function UserFooter() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
+    <VoiceProvider>
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
       <aside className="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-border bg-surface/60 p-4 backdrop-blur lg:flex">
         <div className="flex items-center justify-between pl-2 pt-1">
           <Link href="/">
             <Brand />
           </Link>
-          <NotificationBell />
+          <div className="flex items-center">
+            <VoiceButton />
+            <NotificationBell />
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           <NavList />
@@ -82,6 +88,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-bg/80 px-4 py-3 backdrop-blur lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
+          <MicIndicator />
+          <VoiceButton />
           <NotificationBell />
           <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-muted hover:bg-raised" aria-label="Open menu" aria-expanded={open}>
           <Menu className="size-5" />
@@ -117,7 +125,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <main className="min-w-0 px-4 py-6 sm:px-8 lg:py-10">{children}</main>
+      <main className="min-w-0 px-4 py-6 sm:px-8 lg:py-10">
+        <div className="pointer-events-none sticky top-4 z-20 hidden justify-end lg:flex">
+          <div className="pointer-events-auto">
+            <MicIndicator />
+          </div>
+        </div>
+        {children}
+      </main>
     </div>
+    </VoiceProvider>
   );
 }
