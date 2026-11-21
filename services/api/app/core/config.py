@@ -84,6 +84,18 @@ class Settings(BaseSettings):
     vapid_subject: str = "mailto:nexus@localhost"
     briefing_default_time: str = "07:30"  # owner's local time
 
+    # --- Voice (local) ----------------------------------------------------------
+    # Speech-to-text: any server that takes a multipart `file` and returns {"text": ...}:
+    # the NEXUS voice server, whisper.cpp's server (Vulkan on AMD), or an OpenAI-style one.
+    stt_url: str = "http://localhost:8880/v1/audio/transcriptions"
+    stt_language: str = "en"  # empty = detect
+    # Text-to-speech: POST {"input": ...} returns WAV (NEXUS voice server with Piper).
+    tts_url: str = "http://localhost:8880/v1/audio/speech"
+    tts_voice: str = "en_US-lessac-medium"
+    voice_enabled: bool = True
+    voice_max_upload_mb: int = 10
+    pair_code_minutes: int = 10
+
     @property
     def google_ready(self) -> bool:
         return bool(self.google_client_id and self.google_client_secret.get_secret_value())

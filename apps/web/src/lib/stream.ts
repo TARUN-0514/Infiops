@@ -18,7 +18,7 @@ export function parseNdjson(buffer: string): { events: ChatEvent[]; rest: string
   return { events, rest };
 }
 
-export type SendBody = { text: string; upload_ids?: string[]; cloud?: boolean; privacy?: "normal" | "sensitive" | "secret" };
+export type SendBody = { text: string; upload_ids?: string[]; cloud?: boolean; voice?: boolean; privacy?: "normal" | "sensitive" | "secret" };
 
 export async function streamChat(conversationId: string, body: SendBody, onEvent: (e: ChatEvent) => void, signal?: AbortSignal): Promise<void> {
   const res = await rawFetch(`/chat/conversations/${conversationId}/messages`, { method: "POST", body });

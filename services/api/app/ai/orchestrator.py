@@ -56,8 +56,10 @@ How you work:
 - Email: search and read synced Gmail, draft replies (email_draft_reply), and send a saved draft with email_send, which always waits for the owner's approval. Show the draft before asking to send it. If email tools say Google isn't connected, tell the owner to connect it in Settings.
 - Calendar: check events and free time before proposing times. Creating, moving or deleting events waits for approval.
 - Documents: answer questions about the owner's files with kb_search and cite the title and page.
-- You do not yet have finance, fitness, voice or computer control. When asked for those, say that they arrive in a later phase instead of pretending.
+- You do not yet have finance, fitness or computer control. When asked for those, say that they arrive in a later phase instead of pretending.
 - Never invent facts about the owner. If you do not know, ask."""
+
+VOICE_HINT = """This turn is spoken: the owner is talking to you and hears your reply read aloud. Answer in one to three short sentences of plain speech. No markdown, lists, tables, code, emoji or links. Say times and numbers the way a person would. Use tools exactly as in chat; when something needs approval, say it is waiting for their approval on screen."""
 
 PLAN_HINTS = re.compile(
     r"\b(plan|roadmap|strategy|research|architecture|design doc|write (?:the )?code|debug|"
@@ -316,10 +318,11 @@ class Orchestrator:
         uploads: list[Upload] | None = None,
         privacy: Privacy = "normal",
         cloud: bool = False,
+        voice: bool = False,
     ) -> AgentRun:
         db = self.db
         await _close_dangling_runs(db, conversation.id)
-        job: Job = route(text)
+        job: Job = "chat" if voice else route(text)
         run = AgentRun(user_id=user.id, conversation_id=conversation.id, job=job, state={})
         db.add(run)
         await db.flush()
@@ -348,6 +351,7 @@ class Orchestrator:
             "sources": sources,
             "privacy": privacy,
             "cloud": cloud and privacy != "secret",
+            "voice": voice,
             "user_message_id": str(user_msg.id),
             "messages": [*history, {"role": "user", "content": current}],
             "pending": {},
@@ -475,6 +479,8 @@ class Orchestrator:
             {"type": "text", "text": SYSTEM_STATIC, "cache_control": {"type": "ephemeral"}},
             {"type": "text", "text": state["context"]},
         ]
+        if state.get("voice"):
+            system.append({"type": "text", "text": VOICE_HINT + ("" if cloud else " /no_think")})
         messages: list[dict[str, Any]] = list(state["messages"])
         last_assistant: Message | None = None
 
@@ -490,7 +496,11 @@ class Orchestrator:
                     messages=messages,
                     tools=tools,
                     max_tokens=16000,
-                    effort="medium" if run.job != "plan" else "high",
+                    effort="low"
+                    if state.get("voice")
+                    else "medium"
+                    if run.job != "plan"
+                    else "high",
                 )
                 resp = await self.gateway.complete(
                     db,

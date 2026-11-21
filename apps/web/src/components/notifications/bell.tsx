@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { freshNotifications, showLive } from "@/lib/live-notify";
 import type { AppNotification } from "@/lib/types";
 import { cn, formatDateTime } from "@/lib/utils";
 
@@ -17,8 +18,15 @@ export function NotificationBell({ className }: { className?: string }) {
   const q = useQuery({
     queryKey: ["notifications"],
     queryFn: () => api<{ items: AppNotification[]; unread: number }>("/notifications"),
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
+  const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!q.data) return;
+    const { fresh, seen: next } = freshNotifications(seen.current, q.data.items);
+    seen.current = next;
+    void showLive(fresh);
+  }, [q.data]);
   const readAll = useMutation({
     mutationFn: () => api("/notifications/read-all", { method: "POST" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["notifications"] }),

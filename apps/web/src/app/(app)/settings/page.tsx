@@ -186,7 +186,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" description="Profile, appearance, integrations, AI, memory and security." />
+      <PageHeader title="Settings" description="Profile, appearance, integrations, voice, AI, memory and security." />
       <div className="space-y-4">
         <Card>
           <CardTitle>Profile</CardTitle>
@@ -213,6 +213,15 @@ export default function SettingsPage() {
               <p className="mt-1 text-sm text-muted">Connect Google for email and calendar, and turn on notifications.</p>
             </div>
             <Link href="/settings/integrations" className="text-sm text-accent hover:underline">Open</Link>
+          </div>
+        </Card>
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>Voice and devices</CardTitle>
+              <p className="mt-1 text-sm text-muted">Check the voice server, pair your Windows PC, and turn on the wake word or hands-free.</p>
+            </div>
+            <Link href="/settings/devices" className="text-sm text-accent hover:underline">Open</Link>
           </div>
         </Card>
         <AiStatusCard />

@@ -13,6 +13,9 @@ used by chat and voice on the web, a Windows desktop app and a phone PWA.
 | --- | --- |
 | `services/api` | FastAPI backend, Alembic migrations, Arq worker (`app/worker.py`: mail and calendar sync, briefings, document reading) |
 | `apps/web` | Next.js web app (also the UI inside the Tauri desktop app and the PWA) |
+| `apps/desktop` | Windows app (Tauri 2): window, tray, Ctrl+Shift+Space push-to-talk, notifications |
+| `services/voice` | Local voice server: Whisper speech recognition and Piper voice |
+| `services/local-agent` | `nexus-agent` for your PC: wake word, hands-free voice, link to NEXUS |
 | `docs` | Blueprint, phase plans and phase prompts |
 
 ## Run it on Windows (quick start)
@@ -55,6 +58,46 @@ While the app is in *Testing* mode, Google asks you to sign in again every 7 day
 
 **Notifications.** Turn them on in **Settings › Integrations**. Browsers allow push only on `localhost` or `https://`, so on your phone it works once NEXUS is served over HTTPS.
 
+## Voice
+
+Voice runs on your PC. `docker compose up -d` starts the `voice` service (Whisper for speech recognition, Piper for the voice). The first start downloads the models, about 200 MB.
+
+- **Talk:** press the mic button or **Ctrl+Shift+Space** on any page, speak, and pause. NEXUS answers out loud. Talk over it to interrupt. Each answer shows how long it took to start speaking.
+- **Check it:** Settings › Voice and devices tests both parts with a real call.
+- **More accurate recognition:** set `NEXUS_VOICE_STT_MODEL=small.en` in `.env` and run `docker compose up -d voice`.
+- **Use the GPU (fastest):** download a Vulkan build of [whisper.cpp](https://github.com/ggml-org/whisper.cpp) for Windows and a model such as `ggml-large-v3-turbo-q5_0.bin`, then run `whisper-server -m ggml-large-v3-turbo-q5_0.bin --port 8178`. In `.env`, set `NEXUS_STT_URL_DOCKER=http://host.docker.internal:8178/inference` and run `docker compose up -d api`.
+- On a phone, the microphone works only over `https://` (a browser rule).
+
+### Wake word and hands-free (local agent)
+
+The local agent listens on your PC for "Hey Jarvis", and can keep listening for follow-ups. It is off until you turn it on.
+
+```powershell
+winget install astral-sh.uv          # once
+cd infiops\services\local-agent
+uv tool install --python 3.12 ".[audio]"
+```
+
+In NEXUS, open Settings › Voice and devices, press **Pair a PC**, and run the command it shows (`nexus-agent pair --code XXXX-XXXX`). Then run `nexus-agent run` (the Windows app starts it for you). Turn on **Wake word** or **Hands-free** for that PC in Settings. **Stop listening** there closes the microphone at once, and **Remove** ends the agent's access.
+
+## Windows app
+
+The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.
+
+To build it you need [Rust](https://rustup.rs) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) (Microsoft C++ Build Tools and WebView2, already on Windows 11):
+
+```powershell
+cd apps/desktop
+pnpm install
+pnpm build        # installer in src-tauri/target/release/bundle/
+```
+
+It opens http://localhost:3000. To use another address, or to stop it starting the agent, create `%APPDATA%\NEXUS\desktop.json`:
+
+```json
+{ "url": "http://localhost:3000", "start_agent": true, "agent_command": ["nexus-agent", "run"] }
+```
+
 ## Run locally (development)
 
 Requirements: Docker, Python 3.12+ with [uv](https://docs.astral.sh/uv/), Node 22 with pnpm.
@@ -83,6 +126,9 @@ The first account you register becomes the owner, and registration then closes.
 ```bash
 cd services/api && uv run pytest          # needs Postgres with pgvector (nexus_test database) and Redis
 cd apps/web && pnpm test
+cd services/voice && uv run pytest
+cd services/local-agent && uv run pytest
+cd apps/desktop/src-tauri && cargo clippy -- -D warnings
 ```
 
 Model calls in tests use a scripted provider, so tests never need a model server.

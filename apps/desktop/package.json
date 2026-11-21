@@ -1,0 +1,15 @@
+{
+  "name": "nexus-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "NEXUS for Windows: the NEXUS web app in a desktop window, with tray, push-to-talk shortcut, notifications and the local agent",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "check": "cargo check --manifest-path src-tauri/Cargo.toml"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0"
+  },
+  "packageManager": "pnpm@10.28.0"
+}

@@ -51,6 +51,9 @@ services:
       NEXUS_LOCAL_BASE_URL: ${NEXUS_LOCAL_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
       NEXUS_OLLAMA_URL: ${NEXUS_OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
       NEXUS_STORAGE_DIR: /app/data/uploads
+      # Voice runs in the "voice" service unless you point these at whisper.cpp on your PC.
+      NEXUS_STT_URL: ${NEXUS_STT_URL_DOCKER:-http://voice:8880/v1/audio/transcriptions}
+      NEXUS_TTS_URL: ${NEXUS_TTS_URL_DOCKER:-http://voice:8880/v1/audio/speech}
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: [uploads:/app/data]
     ports: ["8000:8000"]
@@ -69,10 +72,24 @@ services:
       NEXUS_LOCAL_BASE_URL: ${NEXUS_LOCAL_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
       NEXUS_OLLAMA_URL: ${NEXUS_OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
       NEXUS_STORAGE_DIR: /app/data/uploads
+      # Voice runs in the "voice" service unless you point these at whisper.cpp on your PC.
+      NEXUS_STT_URL: ${NEXUS_STT_URL_DOCKER:-http://voice:8880/v1/audio/transcriptions}
+      NEXUS_TTS_URL: ${NEXUS_TTS_URL_DOCKER:-http://voice:8880/v1/audio/speech}
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: [uploads:/app/data]
     depends_on:
       api: { condition: service_started }
+
+  # Local speech-to-text (Whisper) and voice (Piper). Models download on first use into
+  # the "voices" volume. Not published on a host port: only the API talks to it.
+  voice:
+    build: ./services/voice
+    environment:
+      VOICE_STT_MODEL: ${NEXUS_VOICE_STT_MODEL:-base.en}
+      VOICE_TTS_VOICE: ${NEXUS_TTS_VOICE:-en_US-lessac-medium}
+      VOICE_PRELOAD: "1"
+    volumes: [voices:/data]
+    restart: unless-stopped
 
   web:
     build:
@@ -84,6 +101,7 @@ services:
     depends_on: [api]
 
 volumes:
+  voices:
   uploads:
   pgdata:
   miniodata:
