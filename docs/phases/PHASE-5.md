@@ -18,7 +18,7 @@ Phase 5 ships in two pull requests. This one is finance, fitness and habits. The
 - [x] Finance API: accounts with balances, transactions (manual, quick, CSV preview and import), monthly summary with budgets and upcoming bills, cash flow, budgets, EMIs and bills with mark paid, debts with avalanche and snowball payoff plans, savings goals
 - [x] Fitness API: exercise library, workouts with sets, heaviest sets, health logs, habits with streaks, weekly report, month tracking calendar
 - [x] Tools (local only): `finance_add_transaction`, `finance_summary`, `fitness_log_workout`, `fitness_log_metric`, `habit_tick`, `fitness_week`
-- [x] Worker: hourly `bill_reminders` (once per payment per cycle, after 8 AM local time)
+- [x] Worker: hourly `reminders_tick` (bill reminders once per payment per cycle, after 8 AM local time; part 2 added SLA, follow-up and date reminders to the same job)
 - [x] Web: Finance (Overview, Transactions, Import, Budgets, EMIs and bills, Debts, Goals) and Fitness (Workouts, Body and food, Habits, This week)
 - [x] Tests: 132 API (26 new), 22 local agent, 58 web unit tests (10 new); browser run of every tab at desktop and phone width
 
@@ -28,7 +28,37 @@ Fitness › This week › **Month tracked** counts the days in a month with spen
 
 ## Left for later
 
-- Phase 5 part 2: security workspaces and personal pages.
 - Splitting one transaction across categories, and rules the owner can edit for auto-categories.
 - PDF bank statements (CSV only for now).
 - A plain-language weekly fitness summary from the local model (the report is numbers only for now).
+
+# Phase 5 part 2: security workspaces and personal life
+
+## Decisions
+
+- **Workspaces are generic boards.** Each has its own statuses (some marked closed), optional custom fields (text, number, select, date) and optional SLA days by severity. Four start empty: Vulnerability management (SLA 7, 30, 90, 180 days for critical to low), AppSec, Cloud security and Pentests. The owner can make more.
+- **SLA and aging are worked out on read** from found date, due date and closed date, so changing a board's SLA doesn't rewrite history. Dashboard: open, past SLA, due in 7 days, escalated, mean days to close, percent closed within SLA, severity split, age buckets.
+- **Imports, no live connectors yet.** Upload a GHAS alerts JSON (`gh api repos/OWNER/REPO/code-scanning/alerts`, also Dependabot and secret scanning), an Inspector findings JSON export, or a CSV from a DAST scanner, Guardium or a pentest (columns found by name). Findings are keyed by alert URL or ARN, so re-importing closes what the scanner reports fixed and reopens what comes back. Live API sync with AWS and GitHub needs new credentials and scopes, so I left it for a later phase and will ask first.
+- **Escalation records only.** Escalate notes who and why and sets a follow-up date; it never sends mail. The chat tool works the same way.
+- **Finding text is untrusted.** Scanner descriptions are shown as text, never acted on, and the chat tool's output says so.
+- **OSCP track.** A track can start from a PEN-200 syllabus (32 topics in 8 sections). Reviews use a simple spaced-repetition step (forgot resets to 1 day; good recall grows the gap up to 180 days). The lab log counts machines and roots.
+- **Journal is encrypted** (`EncryptedText`) and its chat tool is local only. Search decrypts and filters in Python.
+- **Important dates** repeat yearly or once; 29 February falls on 28 February in other years; a reminder goes out once per occurrence.
+- **Navigation:** Personal is a new menu item between Fitness and Work. The blueprint lists Personal as a module but not in its 13 menu items; this is the one departure, and easy to move if you'd rather have it elsewhere.
+
+## Tasks
+
+- [x] Models and migration 0007: workspaces, items, item events, learning tracks, topics, sessions, goals, routines, routine logs, lists, list items, journal entries, important dates
+- [x] Workspaces API: boards, items with filters, history, escalate, import with dry run, summary
+- [x] Learning API: tracks (OSCP template), topics, reviews, sessions
+- [x] Personal API: goals with milestones, routines with daily steps, lists, journal (month, search, tags), important dates
+- [x] Tools: `workspace_find`, `workspace_add`, `workspace_update`, `learning_log`, `list_add`, `personal_overview`, and `journal_add` (local only)
+- [x] Worker: `reminders_tick` adds SLA breach, follow-up and date reminders, each sent once
+- [x] Web: Work gains Vulnerabilities, Boards and Learning tabs; new Personal page (Goals, Routines, Lists, Journal, Important dates)
+- [x] Tests: 149 API (17 new), 69 web unit tests (11 new); browser run of every tab at desktop and phone width
+
+## Left for later
+
+- Live sync from AWS Inspector and GitHub (needs credentials and scopes; will ask).
+- Drag and drop on boards (cards move with a next-status button or the status menu).
+- Travel planning beyond a travel list.

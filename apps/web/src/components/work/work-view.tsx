@@ -186,7 +186,7 @@ function Reports() {
   );
 }
 
-export function WorkView() {
+export function WorkLogView() {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
       <WorkLog />
