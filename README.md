@@ -140,6 +140,10 @@ Work › Vulnerabilities tracks findings with SLA and aging. Add them by hand or
 
 Personal holds goals with milestones, routines you tick off each day, lists (you can say "add milk to groceries" in chat), an encrypted journal that only the local model reads, and important dates with reminders.
 
+## Automations
+
+Automations runs routines on a schedule (daily, chosen weekdays, monthly, or every few hours) or when something happens (a task is created or completed, an important email arrives, a finding passes its SLA, a date is coming up). Describe one in a sentence and your local model drafts it, or build it step by step: do something with a tool, write with AI, only continue if, ask me first, notify me. Sensitive tools always wait for your OK, payments never run, failed steps retry and then alert you, and each automation shows how many runs in the last 14 days finished without failing. The worker must be running for schedules and events (`uv run arq app.worker.WorkerSettings`).
+
 ## Windows app
 
 The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.

@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes import (
     assistant,
     auth,
+    automations,
     briefing,
     calendar,
     devices,
@@ -148,6 +149,7 @@ def create_app() -> FastAPI:
         fitness,
         workspaces,
         personal,
+        automations,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     return app

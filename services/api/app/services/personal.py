@@ -133,4 +133,17 @@ async def date_reminders(db: AsyncSession, user: User, today: date) -> int:
         )
         d.last_reminded_on = today
         sent += 1
+        from app.services.automation_engine import emit
+
+        await emit(
+            db,
+            user.id,
+            "date.upcoming",
+            {
+                "title": d.title,
+                "kind": d.kind,
+                "date": nxt.isoformat(),
+                "days_left": out["days_left"],
+            },
+        )
     return sent

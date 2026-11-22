@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
-import { CURRENT_PHASE, NAV, findNav } from "@/lib/nav";
+import { NAV, findNav, isComing } from "@/lib/nav";
 
 export function generateStaticParams() {
-  return NAV.filter((n) => n.phase > CURRENT_PHASE).map((n) => ({ module: n.slug }));
+  return NAV.filter(isComing).map((n) => ({ module: n.slug }));
 }
 
 export const dynamicParams = false;
@@ -12,7 +12,7 @@ export const dynamicParams = false;
 export default async function ModulePage({ params }: { params: Promise<{ module: string }> }) {
   const { module } = await params;
   const item = findNav(module);
-  if (!item || item.phase <= CURRENT_PHASE) notFound();
+  if (!item || !isComing(item)) notFound();
   const Icon = item.icon;
   return (
     <div className="mx-auto max-w-3xl">

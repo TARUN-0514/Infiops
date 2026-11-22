@@ -10,7 +10,7 @@ import { NotificationBell } from "@/components/notifications/bell";
 import { MicIndicator, VoiceButton } from "@/components/voice/voice-button";
 import { VoiceProvider } from "@/components/voice/voice-provider";
 import { useAuth } from "@/lib/auth";
-import { CURRENT_PHASE, NAV } from "@/lib/nav";
+import { NAV, isComing } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
@@ -20,7 +20,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         const Icon = item.icon;
-        const later = item.phase > CURRENT_PHASE;
+        const later = isComing(item);
         return (
           <Link
             key={item.slug}
