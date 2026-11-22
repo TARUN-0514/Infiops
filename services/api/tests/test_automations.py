@@ -210,12 +210,13 @@ async def test_checkpoint_approve_and_decline(client: AsyncClient) -> None:
         client,
         h,
         steps=[
-            {"kind": "approval", "config": {"message": "Send the weekly report?"}},
+            {"kind": "approval", "config": {"message": "Send the report for {{now.date}}?"}},
             {"kind": "notify", "config": {"title": "Sent"}},
         ],
     )
     run = (await client.post(f"{API}/automations/{wf['id']}/run", headers=h)).json()
     assert run["status"] == "waiting_approval"
+    assert run["steps"][0]["message"].startswith("Send the report for 20")
     waiting = (
         await client.get(f"{API}/automation-runs", params={"state": "waiting"}, headers=h)
     ).json()

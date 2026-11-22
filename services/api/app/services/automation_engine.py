@@ -184,7 +184,7 @@ async def _tool_step(
             tool=tool.name,
             automation_run=str(run.id),
         )
-        _set(run, i, status="waiting", approval_id=str(approval.id))
+        _set(run, i, status="waiting", approval_id=str(approval.id), message=approval.summary)
         run.status, run.resume_at = "waiting_approval", _now()  # waiting since
         await notify.notify(
             db,
@@ -286,16 +286,16 @@ async def execute(
                     return run
             elif step["kind"] == "approval":
                 if step.get("approved") is None:
-                    _set(run, i, status="waiting")
+                    msg = str(render(str(cfg.get("message", "")), _scope(run, user)))[:500]
+                    _set(run, i, status="waiting", message=msg)
                     run.status, run.resume_at = "waiting_approval", _now()  # waiting since
-                    msg = render(str(cfg.get("message", "")), _scope(run, user))
                     wf = await db.get(AutomationWorkflow, run.workflow_id)
                     await notify.notify(
                         db,
                         user.id,
                         kind="approval",
                         title=f"{wf.name if wf else 'Automation'} needs your go-ahead",
-                        body=str(msg)[:300],
+                        body=msg[:300],
                         link=run_link(run),
                     )
                     await db.commit()

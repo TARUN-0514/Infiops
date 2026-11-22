@@ -17,10 +17,16 @@ Automations shows each workflow's runs over the last 14 days and its success rat
 
 ## Part 1 tasks
 
-- [ ] Models and migration 0008: automation_workflows, automation_steps, automation_runs; approval_requests.automation_run_id
-- [ ] Engine: next run time, event matching, step runner with templates, conditions, approvals, retries, failure alerts
-- [ ] Worker: `automation_tick` every minute
-- [ ] API: workflows CRUD, run now, runs with step log, decide a checkpoint, draft from text, tool catalogue
-- [ ] Tool approvals inside a run resume the run
-- [ ] Web: Automations page (list with 14-day health, builder, run history)
-- [ ] Tests
+- [x] Models and migration 0008: automation_workflows, automation_steps, automation_runs; approval_requests.automation_run_id
+- [x] Engine: next run time, event matching, step runner with templates, conditions, approvals, retries, failure alerts
+- [x] Worker: `automation_tick` every minute
+- [x] API: workflows CRUD, run now, runs with step log, decide a checkpoint, draft from text, tool catalogue
+- [x] Tool approvals inside a run resume the run
+- [x] Web: Automations page (list with 14-day health, builder, run history)
+- [x] Tests: 162 API (13 new), 75 web unit tests (6 new); browser run of the builder, drafting, run now, checkpoints, editing and phone width
+
+## Part 1 notes
+
+- **Menu:** Automations is marked as shipped ahead of the rest of phase 6, so it loses its "P6" badge; Analytics keeps it until part 2.
+- **Event runs start on the worker's next minute tick**, not inside the request that raised the event, so a slow automation never slows the page you're on.
+- **Not built yet:** external API steps and shared templates (later in the blueprint), drag-and-drop reordering (steps move with up and down buttons), and branching (a condition only stops the run).

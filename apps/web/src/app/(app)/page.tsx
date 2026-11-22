@@ -10,7 +10,7 @@ import { BriefingHomeCard } from "@/components/briefing/briefing";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Dashboard, type Widget } from "@/components/home/dashboard";
 import { useAuth } from "@/lib/auth";
-import { CURRENT_PHASE, NAV } from "@/lib/nav";
+import { NAV, isComing } from "@/lib/nav";
 import { greetingFor } from "@/lib/utils";
 
 function useNow(intervalMs = 1000) {
@@ -29,7 +29,7 @@ export default function HomePage() {
   const tz = user.timezone;
   const date = new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(now);
   const time = new Intl.DateTimeFormat("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tz }).format(now);
-  const upcoming = NAV.filter((n) => n.phase > CURRENT_PHASE).sort((a, b) => a.phase - b.phase).slice(0, 4);
+  const upcoming = NAV.filter(isComing).sort((a, b) => a.phase - b.phase).slice(0, 4);
   const widgets: Widget[] = [
     { id: "briefing", title: "Morning briefing", size: "m", render: () => <BriefingHomeCard /> },
     { id: "schedule", title: "Schedule", size: "m", render: () => <ScheduleCard tz={tz} /> },

@@ -25,6 +25,8 @@ export type NavItem = {
   phase: number;
   summary: string;
   coming: string[];
+  /** Shipped ahead of the rest of its phase. */
+  ready?: boolean;
 };
 
 // Order and names follow the blueprint's main navigation, plus Personal (phase 5), which
@@ -82,7 +84,7 @@ export const NAV: NavItem[] = [
     coming: ["Work log and weekly status report", "Vulnerability findings with SLA and aging", "AppSec, cloud and pentest boards; OSCP study track"],
   },
   {
-    slug: "automations", href: "/automations", label: "Automations", icon: Workflow, phase: 6,
+    slug: "automations", href: "/automations", label: "Automations", icon: Workflow, phase: 6, ready: true,
     summary: "Routines that run on a schedule or when something happens.",
     coming: ["Workflows written in plain language", "Approval checkpoints and run history", "Visual workflow builder"],
   },
@@ -95,6 +97,11 @@ export const NAV: NavItem[] = [
 ];
 
 export const CURRENT_PHASE = 5;
+
+/** Not built yet: shows a "coming in phase N" page and a badge in the menu. */
+export function isComing(n: NavItem): boolean {
+  return n.phase > CURRENT_PHASE && !n.ready;
+}
 
 export function findNav(slug: string): NavItem | undefined {
   return NAV.find((n) => n.slug === slug);
