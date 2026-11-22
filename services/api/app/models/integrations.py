@@ -93,7 +93,9 @@ class Briefing(UUIDPk, CreatedAt, Base):
 
     __tablename__ = "briefings"
     __table_args__ = (
-        CheckConstraint("kind IN ('morning','weekly_status')", name="kind"),
+        CheckConstraint(
+            "kind IN ('morning','midday','evening','weekly_status','monthly')", name="kind"
+        ),
         UniqueConstraint("user_id", "kind", "for_date", name="uq_briefing_day"),
     )
 

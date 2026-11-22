@@ -122,7 +122,11 @@ async def test_scheduled_briefing_notifies_once(
     hhmm = (now_local - timedelta(minutes=5)).strftime("%H:%M")
     if now_local.hour == 0 and now_local.minute < 5:
         hhmm = "00:00"
-    r = await client.put(f"{API}/briefings/settings", json={"time": hhmm}, headers=h)
+    r = await client.put(
+        f"{API}/briefings/settings",
+        json={"time": hhmm, "midday": False, "evening": False, "monthly": False},
+        headers=h,
+    )
     assert r.json()["time"] == hhmm
     model.push("Morning! Quiet day.")
     assert await briefing_tick({}) == 1

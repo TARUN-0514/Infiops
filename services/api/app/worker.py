@@ -118,14 +118,19 @@ async def sync_all(ctx: dict[str, Any]) -> int:
 
 
 async def briefing_tick(_: dict[str, Any]) -> int:
-    """Every few minutes: write and deliver any morning briefing that is due."""
+    """Every few minutes: write and deliver any morning briefing, midday check-in, evening
+    review or monthly report that is due."""
     from app.ai.gateway import get_gateway
-    from app.services import briefing
+    from app.services import briefing, checkins
 
     delivered = 0
     async with get_sessionmaker()() as db:
         for user, day in await briefing.due_users(db):
             await briefing.deliver(db, get_gateway(), user, day)
+            await db.commit()
+            delivered += 1
+        for user, kind, day in await checkins.due(db):
+            await checkins.deliver(db, get_gateway(), user, kind, day)
             await db.commit()
             delivered += 1
     return delivered
