@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.timeutil import describe_now
-from app.ai.tools.registry import ToolContext, ToolRegistry, decide
+from app.ai.tools.registry import ToolContext, ToolRegistry, approval_summary, decide
 from app.ai.types import (
     BudgetExceededError,
     Job,
@@ -25,6 +25,7 @@ from app.ai.types import (
     ModelUnavailableError,
     Privacy,
 )
+from app.ai.untrusted import attr, neutral
 from app.core.config import get_settings
 from app.core.logging import log
 from app.models import (
@@ -36,6 +37,7 @@ from app.models import (
     Upload,
     User,
 )
+from app.services import audit
 from app.services import memory as mem
 from app.services import tasks as task_svc
 from app.services.storage import get_storage
@@ -137,7 +139,8 @@ async def _expand_blocks(
             out.append(
                 {
                     "type": "text",
-                    "text": f'<attachment name="{upload.filename}">\n{text}\n</attachment>',
+                    "text": f'<attachment name="{attr(upload.filename)}">\n'
+                    f"{neutral(text)}\n</attachment>",
                 }
             )
     return out
@@ -201,7 +204,7 @@ async def _today_block(db: AsyncSession, user: User) -> list[str]:
                 if e.all_day
                 else f"{e.starts_at.astimezone(zone):%H:%M}-{e.ends_at.astimezone(zone):%H:%M}"
             )
-            + f" {e.title}"
+            + f" {neutral(e.title)}"
             for e in events[:12]
         ],
         "</today>",
@@ -226,14 +229,15 @@ async def _context_block(
         "<memories>",
         *[
             f"- [{h.item.id}] ({h.item.category}, since {h.item.created_at:%Y-%m-%d}) "
-            f"{h.item.content}"
+            f"{neutral(h.item.content)}"
             for h in hits
         ],
         "</memories>",
         "",
         "<tasks> (open, soonest first)",
         *[
-            f"- [{t.id}] {t.title}" + (f" (due {t.due_at.isoformat()})" if t.due_at else "")
+            f"- [{t.id}] {neutral(t.title)}"
+            + (f" (due {t.due_at.isoformat()})" if t.due_at else "")
             for t in open_tasks
         ],
         "</tasks>",
@@ -274,7 +278,12 @@ async def _save_message(
 
 def message_out(m: Message, tool_status: dict[str, str] | None = None) -> dict[str, Any]:
     tools = [
-        {"id": b["id"], "name": b["name"], "status": (tool_status or {}).get(b["id"], "succeeded")}
+        {
+            "id": b["id"],
+            "name": b["name"],
+            "input": b.get("input", {}),
+            "status": (tool_status or {}).get(b["id"], "succeeded"),
+        }
         for b in m.content
         if b.get("type") == "tool_use"
     ]
@@ -478,6 +487,7 @@ class Orchestrator:
             exe.status = "succeeded"
             output = json.loads(json.dumps(output, default=str))  # Decimals, dates -> JSON
         exe.output, exe.finished_at = output, datetime.now(UTC)
+        audit.tool_run(self.db, ctx.user.id, exe, via="chat")
         await self.emit(
             {
                 "type": "tool.finished",
@@ -679,6 +689,7 @@ class Orchestrator:
             if decision == "deny":
                 exe.status = "denied"
                 db.add(exe)
+                audit.tool_run(db, user.id, exe, via="chat")
                 results.append(
                     {
                         "type": "tool_result",
@@ -692,6 +703,32 @@ class Orchestrator:
                 )
                 continue
             if decision == "ask":
+                try:
+                    summary = await approval_summary(
+                        tool, ctx, tool.input_model.model_validate(call.input)
+                    )
+                except (ValidationError, LookupError, ValueError) as exc:
+                    # Never ask the owner to approve a call that couldn't run as written.
+                    exe.status, exe.error = "failed", _error_text(exc)
+                    db.add(exe)
+                    results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": call.id,
+                            "is_error": True,
+                            "content": f"Tool failed: {exe.error}",
+                        }
+                    )
+                    await self.emit(
+                        {
+                            "type": "tool.finished",
+                            "id": call.id,
+                            "name": tool.name,
+                            "status": "failed",
+                            "error": exe.error,
+                        }
+                    )
+                    continue
                 exe.status = "pending_approval"
                 db.add(exe)
                 await db.flush()
@@ -707,6 +744,15 @@ class Orchestrator:
                 )
                 db.add(approval)
                 await db.flush()
+                audit.record(
+                    db,
+                    "approval.requested",
+                    user_id=user.id,
+                    actor="assistant",
+                    target=str(approval.id),
+                    tool=tool.name,
+                    run=str(run.id),
+                )
                 pending[call.id] = str(approval.id)
                 await self.emit({"type": "approval.required", "approval": approval_out(approval)})
                 continue
@@ -714,6 +760,12 @@ class Orchestrator:
             await db.flush()
             results.append(await self._execute(ctx, exe))
         return results, pending
+
+
+def _error_text(exc: Exception) -> str:
+    if isinstance(exc, ValidationError):
+        return json.dumps(exc.errors(include_url=False, include_context=False))[:2000]
+    return str(exc)
 
 
 def approval_out(a: ApprovalRequest) -> dict[str, Any]:

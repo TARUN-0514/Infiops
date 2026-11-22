@@ -53,6 +53,12 @@ class Tool:
     on_reject: Callable[[ToolContext, Any], Awaitable[None]] | None = None
     # Finance and health data stay on the local model: hidden from cloud runs.
     local_only: bool = False
+    # Looks up what the call will really touch (the email's recipients, the event's
+    # title) so the approval card says exactly what the owner is approving.
+    describe: Callable[[ToolContext, Any], Awaitable[str]] | None = None
+    # Runs when an approval is requested, to lock what is being approved (for example a
+    # draft can't be edited while its send waits for approval).
+    on_request: Callable[[ToolContext, Any], Awaitable[None]] | None = None
 
     def spec(self) -> ToolSpec:
         schema = self.input_model.model_json_schema()
@@ -111,3 +117,16 @@ async def decide(db: AsyncSession, user_id: uuid.UUID, tool: Tool) -> Decision:
         )
     )
     return clamp(tool.risk, policy)  # type: ignore[arg-type]
+
+
+async def approval_summary(tool: Tool, ctx: ToolContext, args: Any) -> str:
+    """The approval card's one line, from stored data where the tool can look it up.
+    Also runs the tool's on_request lock. Falls back to the static summary."""
+    if tool.on_request is not None:
+        await tool.on_request(ctx, args)
+    if tool.describe is not None:
+        try:
+            return (await tool.describe(ctx, args))[:300]
+        except (LookupError, ValueError):
+            pass
+    return tool.summary(args)

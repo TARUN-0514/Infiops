@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.gateway import ModelGateway
 from app.ai.timeutil import describe_now, local_to_utc
 from app.ai.types import ModelRequest
+from app.ai.untrusted import neutral
 from app.services.tasks import validate_rrule
 
 SCHEMA: dict[str, Any] = {
@@ -105,7 +106,7 @@ async def parse_task(
             {"type": "text", "text": SYSTEM},
             {"type": "text", "text": f"Current local time: {describe_now(tz, now)}"},
         ],
-        messages=[{"role": "user", "content": f"<sentence>{text}</sentence>"}],
+        messages=[{"role": "user", "content": f"<sentence>{neutral(text)}</sentence>"}],
         max_tokens=1024,
         effort="low",
         json_schema=SCHEMA,

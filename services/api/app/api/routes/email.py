@@ -111,9 +111,11 @@ async def _message(db: DB, auth: Auth, mid: uuid.UUID) -> EmailMessage:
 
 async def _draft(db: DB, auth: Auth, did: uuid.UUID) -> EmailDraft:
     try:
-        return await mail.get_owned_draft(db, auth.user.id, did)
+        d = await mail.get_owned_draft(db, auth.user.id, did)
     except LookupError:
         not_found("Draft not found.")
+    await mail.unlock_if_stale(db, d)
+    return d
 
 
 @router.get("/messages/{mid}")
