@@ -8,28 +8,31 @@ services:
       POSTGRES_USER: nexus
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus}
       POSTGRES_DB: nexus
-    ports: ["5432:5432"]
+    # Only this PC can reach the database, Redis and MinIO; the app reaches them inside Docker.
+    ports: ["127.0.0.1:5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nexus"]
       interval: 5s
       retries: 10
 
+    restart: unless-stopped
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["127.0.0.1:6379:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       retries: 10
 
+    restart: unless-stopped
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nexus}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nexus-dev-password}
-    ports: ["9000:9000", "9001:9001"]
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
     volumes: [miniodata:/data]
 
   # Local AI. On Windows with an AMD GPU, run Ollama or LM Studio natively instead (Docker
@@ -63,6 +66,7 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
+    restart: unless-stopped
   worker:
     build: ./services/api
     command: ["arq", "app.worker.WorkerSettings"]
@@ -87,6 +91,7 @@ services:
   # Nightly backups of the database and uploads into ./backups on your PC (copy that folder
   # to another drive or cloud folder too). The encryption key is not in them: keep your
   # .env somewhere safe and separate. Restore drill: scripts/restore-drill.sh
+    restart: unless-stopped
   backup:
     image: pgvector/pgvector:pg16
     entrypoint: ["/scripts/schedule.sh"]
@@ -139,6 +144,7 @@ services:
     ports: ["3000:3000"]
     depends_on: [api]
 
+    restart: unless-stopped
 volumes:
   voices:
   uploads:

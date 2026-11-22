@@ -83,3 +83,31 @@ as they grow instead of scanning every row.
   folder is up to the owner; NEXUS doesn't upload anything.
 - The worker check is left out of alerts because the worker sends them; the banner
   covers it.
+
+## Part 3 tasks
+
+- [x] Windows installer: NSIS, per-user (no admin prompt), Start menu folder
+- [x] Auto-update: release builds check signed GitHub releases at start and every six
+      hours, notify once per version, and install only when the owner chooses
+      **Install update** in the tray; signatures must name the version
+      (`requireSignedVersion`), so an older release can't be replayed as newer
+- [x] `desktop-release` workflow: tag `desktop-vX.Y.Z`, build, sign, draft release with
+      `latest.json`; nothing reaches installed apps until the draft is published
+- [x] Guides: [SETUP.md](../SETUP.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
+      [RELEASING.md](../RELEASING.md), [API.md](../API.md) with `api/openapi.json`
+- [x] API reference generated from the code; a test fails when it's out of date
+- [x] `.env.example` documents every setting; a test checks it against the settings
+      model and that its values parse
+- [x] Compose: Postgres, Redis and MinIO bound to 127.0.0.1; every service restarts by itself
+
+## What is not automated
+
+- **The release signing key** is made once on the owner's PC and stored as a GitHub
+  secret (RELEASING.md). Until it exists, the release workflow stops with a clear error
+  and installed apps simply don't check for updates.
+- **The Windows installer is built only on GitHub's Windows runners.** CI here checks the
+  Rust code with clippy on Linux, with and without the updater config, but the first real
+  installer and update will be tried on the owner's PC.
+- **HTTPS for the phone** uses Tailscale, set up by hand (DEPLOYMENT.md).
+- **The gate** (one month of daily use with no manual fixes) starts when the owner starts
+  using it daily.

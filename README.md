@@ -6,6 +6,9 @@ used by chat and voice on the web, a Windows desktop app and a phone PWA.
 - Design: [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md)
 - Engineering rules for coding agents: [`CLAUDE.md`](CLAUDE.md)
 - Current phase and its gate: [`docs/phases/`](docs/phases/)
+- Guides: [setup on Windows](docs/SETUP.md), [running it every day](docs/DEPLOYMENT.md),
+  [API reference](docs/API.md), [releasing the Windows app](docs/RELEASING.md),
+  [security review](docs/SECURITY-REVIEW.md)
 
 ## Layout
 
@@ -184,12 +187,14 @@ docker compose up -d
 
 The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.
 
-To build it you need [Rust](https://rustup.rs) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) (Microsoft C++ Build Tools and WebView2, already on Windows 11):
+**Install it** from the latest release: https://github.com/TARUN-0514/infiops/releases/latest (`NEXUS_x.y.z_x64-setup.exe`, installs for your user without an admin prompt). When a new version is published you get a notification; choose **Install update** in the tray menu when it suits you. Updates must be signed with the project's key. Publishing a release: [docs/RELEASING.md](docs/RELEASING.md).
+
+**Build it yourself** with [Rust](https://rustup.rs) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) (Microsoft C++ Build Tools and WebView2, already on Windows 11). A local build has no update key, so it never updates itself:
 
 ```powershell
 cd apps/desktop
 pnpm install
-pnpm build        # installer in src-tauri/target/release/bundle/
+pnpm build        # installer in src-tauri/target/release/bundle/nsis/
 ```
 
 It opens http://localhost:3000. To use another address, or to stop it starting the agent, create `%APPDATA%\NEXUS\desktop.json`:
@@ -232,6 +237,12 @@ cd apps/desktop/src-tauri && cargo clippy -- -D warnings
 ```
 
 Model calls in tests use a scripted provider, so tests never need a model server.
+
+After changing an API route, regenerate the API reference (a test fails until you do):
+
+```bash
+cd services/api && uv run python scripts/export_openapi.py
+```
 
 **Phase 1 gate (task parsing).** With your model server running, this checks 20 everyday sentences:
 
