@@ -177,15 +177,14 @@ def _pg_env(database: str) -> dict[str, str]:
     }
 
 
-def _pg_tools_ok() -> bool:
+def _pg_dump_major() -> int | None:
     if not (shutil.which("pg_dump") and shutil.which("bash")):
-        return False
+        return None
     out = subprocess.run(["pg_dump", "--version"], capture_output=True, text=True).stdout
     m = re.search(r"(\d+)\.", out)
-    return bool(m and int(m.group(1)) >= 16)
+    return int(m.group(1)) if m else None
 
 
-@pytest.mark.skipif(not _pg_tools_ok(), reason="needs bash and pg_dump 16+")
 async def test_backup_and_restore_drill(
     client: AsyncClient, model: ScriptedProvider, backups: Path, tmp_path_factory: Any
 ) -> None:
@@ -193,6 +192,13 @@ async def test_backup_and_restore_drill(
     and check counts, schema and decryption. Then show the check catches a lost row and
     the wrong encryption key."""
     from app import cli
+
+    # The backup container runs the same Postgres major version as the server; a newer
+    # pg_dump writes settings an older server can't restore, so only run with a match.
+    async with get_sessionmaker()() as db:
+        server = int(await db.scalar(text("SHOW server_version_num")) or 0) // 10000
+    if _pg_dump_major() != server:
+        pytest.skip(f"needs bash and pg_dump {server} (the server's version)")
 
     h = await auth_headers(client)
     await _tx(client, h, description="Rent", amount="25000")
