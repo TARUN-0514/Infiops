@@ -49,6 +49,11 @@ async def settings_for(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
         "enabled": bool(saved.get("enabled", True)),
         "time": str(saved.get("time", get_settings().briefing_default_time)),
         "push": bool(saved.get("push", True)),
+        "midday": bool(saved.get("midday", True)),
+        "midday_time": str(saved.get("midday_time", "13:00")),
+        "evening": bool(saved.get("evening", True)),
+        "evening_time": str(saved.get("evening_time", "20:30")),
+        "monthly": bool(saved.get("monthly", True)),
     }
 
 

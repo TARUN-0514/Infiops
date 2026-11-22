@@ -195,10 +195,12 @@ async def generate_today(body: GenerateIn, db: DB, auth: Auth) -> dict[str, Any]
 
 
 @router.get("/briefings")
-async def history(db: DB, auth: Auth) -> list[dict[str, Any]]:
+async def history(
+    db: DB, auth: Auth, kind: str = Query("morning", pattern="^(morning|midday|evening)$")
+) -> list[dict[str, Any]]:
     rows = await db.scalars(
         select(Briefing)
-        .where(Briefing.user_id == auth.user.id, Briefing.kind == "morning")
+        .where(Briefing.user_id == auth.user.id, Briefing.kind == kind)
         .order_by(Briefing.for_date.desc())
         .limit(30)
     )
@@ -215,11 +217,19 @@ async def mark_read(bid: uuid.UUID, db: DB, auth: Auth) -> dict[str, Any]:
     return briefing_out(b)
 
 
+HHMM = r"^([01]\d|2[0-3]):[0-5]\d$"
+
+
 class BriefingSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enabled: bool | None = None
-    time: str | None = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    time: str | None = Field(None, pattern=HHMM)
     push: bool | None = None
+    midday: bool | None = None
+    midday_time: str | None = Field(None, pattern=HHMM)
+    evening: bool | None = None
+    evening_time: str | None = Field(None, pattern=HHMM)
+    monthly: bool | None = None
 
 
 @router.put("/briefings/settings")

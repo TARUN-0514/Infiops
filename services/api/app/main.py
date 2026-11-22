@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.routes import (
+    analytics,
     assistant,
     auth,
     automations,
@@ -150,6 +151,7 @@ def create_app() -> FastAPI:
         workspaces,
         personal,
         automations,
+        analytics,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     return app
