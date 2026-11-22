@@ -233,6 +233,15 @@ export default function SettingsPage() {
             <Link href="/settings/computer" className="text-sm text-accent hover:underline">Open</Link>
           </div>
         </Card>
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>System status</CardTitle>
+              <p className="mt-1 text-sm text-muted">Check the worker, local AI, sync, backups and disk space, and see what to do when one isn&apos;t working.</p>
+            </div>
+            <Link href="/settings/status" className="text-sm text-accent hover:underline">Open</Link>
+          </div>
+        </Card>
         <AiStatusCard />
         <ToolPermissions />
         <MemoryConsent />

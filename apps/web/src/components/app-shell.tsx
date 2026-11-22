@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Brand } from "@/components/brand";
 import { NotificationBell } from "@/components/notifications/bell";
+import { StatusBanner } from "@/components/status-banner";
 import { MicIndicator, VoiceButton } from "@/components/voice/voice-button";
 import { VoiceProvider } from "@/components/voice/voice-provider";
 import { useAuth } from "@/lib/auth";
@@ -131,6 +132,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <MicIndicator />
           </div>
         </div>
+        <StatusBanner />
         {children}
       </main>
     </div>

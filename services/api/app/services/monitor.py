@@ -147,8 +147,8 @@ async def _worker(now: datetime) -> list[dict[str, Any]]:
                 "worker",
                 "Background worker",
                 "error",
-                "Never seen. Schedules, syncs, briefings and automations aren't running. "
-                "Start it with docker compose up -d worker.",
+                "It hasn't checked in, so schedules, syncs, briefings and automations "
+                "aren't running. Start it with docker compose up -d worker.",
             )
         )
     else:

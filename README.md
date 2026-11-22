@@ -158,6 +158,28 @@ createdb nexus_eval && psql nexus_eval -c "CREATE EXTENSION vector"
 NEXUS_DATABASE_URL=postgresql+asyncpg://nexus:nexus@localhost:5432/nexus_eval uv run python -m evals.run
 ```
 
+## Backups and system status
+
+**Settings, then System status** shows whether the database, worker, local model, sync, automations, backups and disk are working, and what to do when one isn't. If something stays broken for about ten minutes you get a notification, and another when it's fixed.
+
+The `backup` service backs up the database and your uploads every night after 03:00 (`NEXUS_BACKUP_TIME`, in `NEXUS_BACKUP_TZ`) into `./backups`, keeping the last 14. If the PC was off, it backs up soon after it's on. Copy `./backups` to another drive or cloud folder now and then.
+
+**Your encryption key is not in the backup.** Save `NEXUS_ENCRYPTION_KEY` from `.env` in your password manager: without it, finance, health, journal and account data in a backup can't be read.
+
+```
+docker compose up -d backup                  # start nightly backups
+docker compose exec backup /scripts/backup.sh   # back up now
+scripts/restore-drill.sh                     # prove the latest backup restores (monthly)
+```
+
+To restore for real, stop the app and restore over the live database:
+
+```
+docker compose stop api worker web
+docker compose exec -e CONFIRM=yes backup /scripts/restore.sh latest nexus --uploads
+docker compose up -d
+```
+
 ## Windows app
 
 The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.

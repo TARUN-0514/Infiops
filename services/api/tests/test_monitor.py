@@ -63,9 +63,7 @@ async def test_fresh_install_says_what_is_missing(
     checks = {c["key"]: c for c in body["checks"]}
     assert body["overall"] == "error"  # the worker has never run
     assert checks["database"]["state"] == "ok" and checks["redis"]["state"] == "ok"
-    assert (
-        checks["worker"]["state"] == "error" and "never seen" in checks["worker"]["detail"].lower()
-    )
+    assert checks["worker"]["state"] == "error" and "checked in" in checks["worker"]["detail"]
     assert checks["jobs"]["state"] == "off"
     assert checks["sync"]["state"] == "off" and checks["automations"]["state"] == "off"
     assert checks["backups"]["state"] == "warn" and "No backups" in checks["backups"]["detail"]
