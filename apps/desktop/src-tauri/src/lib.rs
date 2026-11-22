@@ -1,6 +1,9 @@
 //! NEXUS for Windows: the NEXUS web app in its own window, a tray icon, a global
 //! push-to-talk shortcut (Ctrl+Shift+Space), desktop notifications, and the local agent
-//! (`nexus-agent run`) started and stopped with the app.
+//! (`nexus-agent run`) started and stopped with the app. Release builds update themselves
+//! from signed GitHub releases when you choose to (see `updates.rs`).
+
+mod updates;
 
 use std::net::{TcpStream, ToSocketAddrs};
 use std::path::PathBuf;
@@ -9,9 +12,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use serde::Deserialize;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent, Wry};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 const PUSH_TO_TALK_EVENT: &str = "nexus://push-to-talk";
@@ -89,7 +92,7 @@ fn start_agent(cfg: &DesktopConfig) -> Option<Child> {
     }
 }
 
-fn stop_agent(app: &AppHandle) {
+pub(crate) fn stop_agent(app: &AppHandle) {
     if let Some(state) = app.try_state::<AgentProcess>() {
         if let Some(mut child) = state.0.lock().expect("agent lock").take() {
             let _ = child.kill();
@@ -175,11 +178,28 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     };
     let agent = MenuItem::with_id(app, "agent", agent_label, true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit NEXUS", true, None::<&str>)?;
+    let version = MenuItem::with_id(
+        app,
+        "version",
+        format!("NEXUS {}", app.package_info().version),
+        false,
+        None::<&str>,
+    )?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&open, &talk, &sep, &agent, &sep, &quit])?;
+    let update = if updates::enabled(app.config()) {
+        Some(updates::menu_item(app)?)
+    } else {
+        None
+    };
+    let mut items: Vec<&dyn IsMenuItem<Wry>> = vec![&open, &talk, &sep, &agent, &sep, &version];
+    if let Some(item) = update.as_ref() {
+        items.push(item);
+    }
+    items.extend([&sep as &dyn IsMenuItem<Wry>, &quit]);
+    let menu = Menu::with_items(app, &items)?;
     let agent_item = agent.clone();
     let mut tray = TrayIconBuilder::with_id("nexus")
-        .tooltip("NEXUS")
+        .tooltip(format!("NEXUS {}", app.package_info().version))
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id.as_ref() {
@@ -195,6 +215,10 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                     }
                     let _ = agent_item.set_text("Stop local agent");
                 }
+            }
+            updates::MENU_ID => {
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move { updates::on_menu(&app).await });
             }
             "quit" => {
                 stop_agent(app);
@@ -222,7 +246,13 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let ptt = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
-    tauri::Builder::default()
+    let context = tauri::generate_context!();
+    let with_updater = updates::enabled(context.config());
+    let mut builder = tauri::Builder::default();
+    if with_updater {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+    builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main(app)
         }))
@@ -249,9 +279,12 @@ pub fn run() {
             if let Err(err) = app.global_shortcut().register(ptt) {
                 eprintln!("push-to-talk shortcut unavailable: {err}");
             }
+            if with_updater {
+                updates::start_background_checks(app.handle().clone());
+            }
             Ok(())
         })
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building NEXUS")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {

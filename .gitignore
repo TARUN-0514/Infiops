@@ -18,3 +18,4 @@ apps/desktop/src-tauri/gen/
 
 # local backups (see infra/backup)
 /backups/
+apps/desktop/src-tauri/tauri.release.conf.json
