@@ -99,7 +99,26 @@ async def create_task(
     db.add(task)
     await db.flush()
     audit.record(db, "task.created", user_id=user_id, target=str(task.id), source=source)
+    await _event(db, user_id, "task.created", task)
     return task
+
+
+async def _event(db: AsyncSession, user_id: uuid.UUID, name: str, task: Task) -> None:
+    from app.services.automation_engine import emit
+
+    project = await db.get(Project, task.project_id) if task.project_id else None
+    await emit(
+        db,
+        user_id,
+        name,
+        {
+            "id": str(task.id),
+            "title": task.title,
+            "priority": task.priority,
+            "project": project.name if project else "",
+            "due_at": task.due_at.isoformat() if task.due_at else None,
+        },
+    )
 
 
 async def update_task(db: AsyncSession, task: Task, **data: Any) -> Task:
@@ -113,6 +132,7 @@ async def update_task(db: AsyncSession, task: Task, **data: Any) -> Task:
         setattr(task, key, value)
     if data.get("status") == "done" and task.completed_at is None:
         task.completed_at = datetime.now(UTC)
+        await _event(db, task.user_id, "task.completed", task)
     elif "status" in data and data["status"] != "done":
         task.completed_at = None
     task.updated_at = datetime.now(UTC)
@@ -133,6 +153,7 @@ async def complete_task(db: AsyncSession, task: Task, tz: str) -> tuple[Task, Ta
     """Mark done. A repeating task spawns its next occurrence."""
     now = datetime.now(UTC)
     task.status, task.completed_at, task.updated_at = "done", now, now
+    await _event(db, task.user_id, "task.completed", task)
     follow_up = None
     nxt = next_occurrence(task, tz)
     if nxt is not None:

@@ -208,6 +208,21 @@ async def triage(db: AsyncSession, gateway: ModelGateway, user: User, *, limit: 
             continue
         m.category, m.priority, m.needs_reply = t.category, t.priority, t.needs_reply
         m.summary, m.triaged_at = t.summary.strip(), datetime.now(UTC)
+        if m.priority == "high":
+            from app.services.automation_engine import emit
+
+            await emit(
+                db,
+                user.id,
+                "email.important",
+                {
+                    "id": str(m.id),
+                    "from": m.from_addr,
+                    "subject": m.subject,
+                    "summary": m.summary,
+                    "needs_reply": m.needs_reply,
+                },
+            )
         done += 1
     return done
 

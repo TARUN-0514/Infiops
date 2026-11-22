@@ -43,7 +43,7 @@ TABLES = (
     "exercises, workout_sessions, workout_sets, health_logs, habits, habit_logs, "
     "workspaces, workspace_items, workspace_item_events, learning_tracks, learning_topics, "
     "learning_sessions, goals, routines, routine_logs, lists, list_items, journal_entries, "
-    "important_dates"
+    "important_dates, automation_workflows, automation_steps, automation_runs"
 )
 
 

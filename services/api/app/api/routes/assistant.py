@@ -32,7 +32,7 @@ from app.models import (
     Upload,
     User,
 )
-from app.services import approvals, audit
+from app.services import approvals, audit, automation_engine
 from app.services.jobs import enqueue
 from app.services.storage import ALLOWED_TYPES, get_storage
 
@@ -320,6 +320,10 @@ async def decide_approval(
         result = await approvals.decide(db, get_registry(), auth.user, approval, body.approve)
         await _after_direct(db, approval, result)
         await db.commit()
+        if approval.automation_run_id is not None:
+            await automation_engine.after_tool_approval(
+                db, get_gateway(), get_registry(), approval, result
+            )
         await db.refresh(approval)
         return {"approval": approval_out(approval), "message": None, "result": result}
     try:

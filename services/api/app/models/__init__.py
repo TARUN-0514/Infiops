@@ -8,6 +8,7 @@ from app.models.ai import (
     ToolExecution,
 )
 from app.models.audit import AuditLog
+from app.models.automation import AutomationRun, AutomationStep, AutomationWorkflow
 from app.models.comms import CalendarEvent, EmailDraft, EmailMessage
 from app.models.finance import (
     Budget,
@@ -52,6 +53,9 @@ __all__ = [
     "AgentRun",
     "ApprovalRequest",
     "AuditLog",
+    "AutomationRun",
+    "AutomationStep",
+    "AutomationWorkflow",
     "Briefing",
     "Budget",
     "CalendarEvent",

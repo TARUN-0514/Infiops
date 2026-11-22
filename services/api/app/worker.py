@@ -194,6 +194,15 @@ async def purge_expired_sessions(_: dict[str, Any]) -> int:
     return removed
 
 
+async def automation_tick(_: dict[str, Any]) -> int:
+    from app.ai.gateway import get_gateway
+    from app.ai.tools.builtin import get_registry
+    from app.services import automation_engine
+
+    async with get_sessionmaker()() as db:
+        return await automation_engine.tick(db, get_gateway(), get_registry())
+
+
 async def startup(_: dict[str, Any]) -> None:
     configure_logging(get_settings().log_level)
 
@@ -212,6 +221,7 @@ class WorkerSettings:
         reminders_tick,
         process_document,
         research_job,
+        automation_tick,
     ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(purge_expired_sessions, hour={3}, minute={15}),  # type: ignore[arg-type]
@@ -222,6 +232,7 @@ class WorkerSettings:
         ),
         cron(briefing_tick, minute=set(range(0, 60, 5))),  # type: ignore[arg-type]
         cron(reminders_tick, minute={7}),  # type: ignore[arg-type]
+        cron(automation_tick, second={30}),  # type: ignore[arg-type]  # every minute
     ]
     on_startup = startup
     on_shutdown = shutdown

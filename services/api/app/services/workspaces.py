@@ -229,6 +229,22 @@ async def sla_alerts(db: AsyncSession, user: User, today: date) -> int:
         if it.due_on and it.due_on < today and it.sla_notified_on is None:
             breached.append(it)
             it.sla_notified_on = today
+            from app.services.automation_engine import emit
+
+            await emit(
+                db,
+                user.id,
+                "finding.sla_breached",
+                {
+                    "id": str(it.id),
+                    "title": it.title,
+                    "severity": it.severity,
+                    "workspace": ws.name,
+                    "asset": it.asset,
+                    "owner": it.owner,
+                    "due_on": it.due_on.isoformat(),
+                },
+            )
         if it.follow_up_on and it.follow_up_on <= today:
             await notify.notify(
                 db,

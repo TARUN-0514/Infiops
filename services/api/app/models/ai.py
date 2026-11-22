@@ -131,6 +131,10 @@ class ApprovalRequest(UUIDPk, CreatedAt, Base):
     tool_execution_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tool_executions.id", ondelete="CASCADE"), nullable=False
     )
+    # Set when a workflow's tool step is waiting for the owner.
+    automation_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("automation_runs.id", ondelete="CASCADE"), index=True
+    )
     tool_name: Mapped[str] = mapped_column(String(80), nullable=False)
     risk: Mapped[str] = mapped_column(String(16), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
