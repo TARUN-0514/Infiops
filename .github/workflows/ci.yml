@@ -77,6 +77,10 @@ jobs:
           workspaces: apps/desktop/src-tauri
       - run: cargo fmt --check
       - run: cargo clippy --locked -- -D warnings
+      - name: Clippy with the release updater config
+        env:
+          TAURI_CONFIG: '{"plugins":{"updater":{"pubkey":"dW50cnVzdGVk","endpoints":["https://example.invalid/latest.json"],"requireSignedVersion":true}}}'
+        run: cargo clippy --locked -- -D warnings
 
   web:
     runs-on: ubuntu-latest
