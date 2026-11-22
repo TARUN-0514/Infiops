@@ -40,7 +40,10 @@ TABLES = (
     "connected_accounts, integration_sync_logs, notifications, push_subscriptions, briefings, "
     "email_messages, email_drafts, calendar_events, documents, document_chunks, work_logs, research_reports, "
     "financial_accounts, transactions, budgets, recurring_payments, debts, savings_goals, "
-    "exercises, workout_sessions, workout_sets, health_logs, habits, habit_logs"
+    "exercises, workout_sessions, workout_sets, health_logs, habits, habit_logs, "
+    "workspaces, workspace_items, workspace_item_events, learning_tracks, learning_topics, "
+    "learning_sessions, goals, routines, routine_logs, lists, list_items, journal_entries, "
+    "important_dates"
 )
 
 
@@ -71,6 +74,15 @@ def model() -> Iterator[ScriptedProvider]:
     local, cloud = ScriptedProvider("local"), ScriptedProvider("anthropic")
     set_gateway(ModelGateway(get_settings(), {"local": local, "anthropic": cloud}))
     yield local
+    set_gateway(None)
+
+
+@pytest.fixture
+def cloud(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[ScriptedProvider, ScriptedProvider]]:
+    monkeypatch.setattr(get_settings(), "cloud_enabled", True)
+    local, remote = ScriptedProvider("local"), ScriptedProvider("anthropic")
+    set_gateway(ModelGateway(get_settings(), {"local": local, "anthropic": remote}))
+    yield local, remote
     set_gateway(None)
 
 

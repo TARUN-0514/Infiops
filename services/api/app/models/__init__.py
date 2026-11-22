@@ -27,9 +27,26 @@ from app.models.integrations import (
 )
 from app.models.knowledge import Document, DocumentChunk
 from app.models.memory import MemoryConflict, MemoryItem, MemorySource
+from app.models.personal import (
+    Goal,
+    ImportantDate,
+    JournalEntry,
+    ListItem,
+    PersonalList,
+    Routine,
+    RoutineLog,
+)
 from app.models.research import ResearchReport
 from app.models.user import Device, User, UserPreferences, UserSession
 from app.models.work import Project, Task, Upload, WorkLog
+from app.models.workspace import (
+    LearningSession,
+    LearningTopic,
+    LearningTrack,
+    Workspace,
+    WorkspaceItem,
+    WorkspaceItemEvent,
+)
 
 __all__ = [
     "AgentRun",
@@ -48,10 +65,17 @@ __all__ = [
     "EmailMessage",
     "Exercise",
     "FinancialAccount",
+    "Goal",
     "Habit",
     "HabitLog",
     "HealthLog",
+    "ImportantDate",
     "IntegrationSyncLog",
+    "JournalEntry",
+    "LearningSession",
+    "LearningTopic",
+    "LearningTrack",
+    "ListItem",
     "MemoryConflict",
     "MemoryItem",
     "MemorySource",
@@ -59,10 +83,13 @@ __all__ = [
     "ModelUsageLog",
     "Notification",
     "PermissionPolicy",
+    "PersonalList",
     "Project",
     "PushSubscription",
     "RecurringPayment",
     "ResearchReport",
+    "Routine",
+    "RoutineLog",
     "SavingsGoal",
     "Task",
     "ToolExecution",
@@ -74,4 +101,7 @@ __all__ = [
     "WorkLog",
     "WorkoutSession",
     "WorkoutSet",
+    "Workspace",
+    "WorkspaceItem",
+    "WorkspaceItemEvent",
 ]

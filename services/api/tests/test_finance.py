@@ -1,6 +1,5 @@
 """Finance: entry, CSV import, budgets, bills, debts, goals; encrypted at rest; local only."""
 
-from collections.abc import Iterator
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -9,10 +8,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select, text
 
-from app.ai.gateway import ModelGateway, set_gateway
 from app.ai.providers import ScriptedProvider
 from app.ai.timeutil import now_local
-from app.core.config import get_settings
 from app.db.session import get_sessionmaker
 from app.models import AuditLog, FinancialAccount, Notification, User
 from app.services import finance, finance_plans
@@ -372,15 +369,6 @@ async def test_debts_and_goals_api(client: AsyncClient) -> None:
 
 
 # --- chat tools stay local -------------------------------------------------------------
-
-
-@pytest.fixture
-def cloud(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[ScriptedProvider, ScriptedProvider]]:
-    monkeypatch.setattr(get_settings(), "cloud_enabled", True)
-    local, remote = ScriptedProvider("local"), ScriptedProvider("anthropic")
-    set_gateway(ModelGateway(get_settings(), {"local": local, "anthropic": remote}))
-    yield local, remote
-    set_gateway(None)
 
 
 async def test_finance_tools_are_local_only(
