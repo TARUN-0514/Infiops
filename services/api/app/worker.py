@@ -131,11 +131,13 @@ async def briefing_tick(_: dict[str, Any]) -> int:
     return delivered
 
 
-async def bill_reminders(_: dict[str, Any]) -> int:
-    """Hourly: remind each owner of bills and EMIs coming due, after 8 AM their time."""
+async def reminders_tick(_: dict[str, Any]) -> int:
+    """Hourly, after 8 AM the owner's time: bills and EMIs coming due, findings past SLA
+    and follow-ups due, and important dates coming up. Each is sent once."""
     from app.ai.timeutil import now_local
     from app.models import User
-    from app.services import finance_plans
+    from app.services import finance_plans, personal
+    from app.services import workspaces as ws_svc
 
     sent = 0
     async with get_sessionmaker()() as db:
@@ -144,6 +146,8 @@ async def bill_reminders(_: dict[str, Any]) -> int:
             if local.hour < 8:
                 continue
             sent += await finance_plans.send_reminders(db, user, local.date())
+            sent += await ws_svc.sla_alerts(db, user, local.date())
+            sent += await personal.date_reminders(db, user, local.date())
             await db.commit()
     return sent
 
@@ -205,7 +209,7 @@ class WorkerSettings:
         sync_account,
         sync_all,
         briefing_tick,
-        bill_reminders,
+        reminders_tick,
         process_document,
         research_job,
     ]
@@ -217,7 +221,7 @@ class WorkerSettings:
             run_at_startup=True,
         ),
         cron(briefing_tick, minute=set(range(0, 60, 5))),  # type: ignore[arg-type]
-        cron(bill_reminders, minute={7}),  # type: ignore[arg-type]
+        cron(reminders_tick, minute={7}),  # type: ignore[arg-type]
     ]
     on_startup = startup
     on_shutdown = shutdown

@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Dumbbell,
   FolderKanban,
+  Heart,
   Home,
   Mail,
   Settings,
@@ -26,7 +27,8 @@ export type NavItem = {
   coming: string[];
 };
 
-// Order and names follow the blueprint's main navigation.
+// Order and names follow the blueprint's main navigation, plus Personal (phase 5), which
+// the blueprint lists as a module but not as a menu item.
 export const NAV: NavItem[] = [
   { slug: "home", href: "/", label: "Home", icon: Home, phase: 0, summary: "Your command centre.", coming: [] },
   {
@@ -70,9 +72,14 @@ export const NAV: NavItem[] = [
     coming: ["Workout logging with sets, reps and weight", "Nutrition, water and sleep", "Weekly progress reports"],
   },
   {
+    slug: "personal", href: "/personal", label: "Personal", icon: Heart, phase: 5,
+    summary: "Goals, routines, lists, journal and important dates.",
+    coming: ["Goals with milestones", "Routines you tick off each day", "Private journal and date reminders"],
+  },
+  {
     slug: "work", href: "/work", label: "Work", icon: Briefcase, phase: 2,
-    summary: "Work log and weekly status reports.",
-    coming: ["Work log and weekly status report (phase 2)", "Vulnerability management and OSCP workspaces (phase 5)"],
+    summary: "Work log, security workspaces and the OSCP track.",
+    coming: ["Work log and weekly status report", "Vulnerability findings with SLA and aging", "AppSec, cloud and pentest boards; OSCP study track"],
   },
   {
     slug: "automations", href: "/automations", label: "Automations", icon: Workflow, phase: 6,

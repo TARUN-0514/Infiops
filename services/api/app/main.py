@@ -23,9 +23,11 @@ from app.api.routes import (
     knowledge,
     memory,
     operator,
+    personal,
     preferences,
     voice,
     work,
+    workspaces,
 )
 from app.core.config import get_settings
 from app.core.logging import configure_logging, log
@@ -144,6 +146,8 @@ def create_app() -> FastAPI:
         preferences,
         finance,
         fitness,
+        workspaces,
+        personal,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     return app

@@ -132,6 +132,14 @@ Finance › Transactions takes quick entries like `450 swiggy dinner` or `salary
 
 Fitness logs workouts with sets (reps, weight, time or distance), body weight and measurements, calories, protein, water, sleep and habits, all encrypted the same way. This week compares with last week, and Month tracked shows which days have spending and workouts. It's tracking, not medical advice.
 
+## Security workspaces and OSCP
+
+Work › Vulnerabilities tracks findings with SLA and aging. Add them by hand or import an export: GHAS alerts JSON (`gh api repos/OWNER/REPO/code-scanning/alerts > alerts.json`), an AWS Inspector findings export, or a CSV from your DAST scanner, Guardium or a pentest. Re-import the same export any time and NEXUS closes what's fixed and reopens what came back. Escalations are recorded, not emailed. Work › Boards holds AppSec, cloud and pentest boards (and any you make), and Work › Learning is the OSCP track with spaced reviews and a lab log.
+
+## Personal
+
+Personal holds goals with milestones, routines you tick off each day, lists (you can say "add milk to groceries" in chat), an encrypted journal that only the local model reads, and important dates with reminders.
+
 ## Windows app
 
 The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.
