@@ -55,8 +55,9 @@ services:
       NEXUS_STT_URL: ${NEXUS_STT_URL_DOCKER:-http://voice:8880/v1/audio/transcriptions}
       NEXUS_TTS_URL: ${NEXUS_TTS_URL_DOCKER:-http://voice:8880/v1/audio/speech}
       NEXUS_SEARXNG_URL: ${NEXUS_SEARXNG_URL_DOCKER:-http://search:8080}
+      NEXUS_BACKUP_DIR: /app/backups
     extra_hosts: ["host.docker.internal:host-gateway"]
-    volumes: [uploads:/app/data]
+    volumes: [uploads:/app/data, "./backups:/app/backups:ro"]
     ports: ["8000:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -77,10 +78,35 @@ services:
       NEXUS_STT_URL: ${NEXUS_STT_URL_DOCKER:-http://voice:8880/v1/audio/transcriptions}
       NEXUS_TTS_URL: ${NEXUS_TTS_URL_DOCKER:-http://voice:8880/v1/audio/speech}
       NEXUS_SEARXNG_URL: ${NEXUS_SEARXNG_URL_DOCKER:-http://search:8080}
+      NEXUS_BACKUP_DIR: /app/backups
     extra_hosts: ["host.docker.internal:host-gateway"]
-    volumes: [uploads:/app/data]
+    volumes: [uploads:/app/data, "./backups:/app/backups:ro"]
     depends_on:
       api: { condition: service_started }
+
+  # Nightly backups of the database and uploads into ./backups on your PC (copy that folder
+  # to another drive or cloud folder too). The encryption key is not in them: keep your
+  # .env somewhere safe and separate. Restore drill: scripts/restore-drill.sh
+  backup:
+    image: pgvector/pgvector:pg16
+    entrypoint: ["/scripts/schedule.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: nexus
+      PGPASSWORD: ${POSTGRES_PASSWORD:-nexus}
+      PGDATABASE: nexus
+      BACKUP_DIR: /backups
+      UPLOADS_DIR: /uploads
+      BACKUP_TIME: ${NEXUS_BACKUP_TIME:-03:00}
+      BACKUP_KEEP: ${NEXUS_BACKUP_KEEP:-14}
+      TZ: ${NEXUS_BACKUP_TZ:-UTC}
+    volumes:
+      - ./infra/backup:/scripts:ro
+      - ./backups:/backups
+      - uploads:/uploads
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
 
   # Local speech-to-text (Whisper) and voice (Piper). Models download on first use into
   # the "voices" volume. Not published on a host port: only the API talks to it.

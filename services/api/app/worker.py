@@ -17,6 +17,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging, log
 from app.db.session import dispose_engine, get_sessionmaker
 from app.models import ConnectedAccount, Document, Message, User, UserSession
+from app.services.monitor import heartbeat, tracked
 
 
 async def extract_memories(
@@ -105,6 +106,7 @@ async def sync_account(_: dict[str, Any], *, account_id: str) -> dict[str, Any]:
     return result
 
 
+@tracked("sync_all")
 async def sync_all(ctx: dict[str, Any]) -> int:
     async with get_sessionmaker()() as db:
         ids = list(
@@ -117,6 +119,7 @@ async def sync_all(ctx: dict[str, Any]) -> int:
     return len(ids)
 
 
+@tracked("briefing_tick")
 async def briefing_tick(_: dict[str, Any]) -> int:
     """Every few minutes: write and deliver any morning briefing, midday check-in, evening
     review or monthly report that is due."""
@@ -136,6 +139,7 @@ async def briefing_tick(_: dict[str, Any]) -> int:
     return delivered
 
 
+@tracked("reminders_tick")
 async def reminders_tick(_: dict[str, Any]) -> int:
     """Hourly, after 8 AM the owner's time: bills and EMIs coming due, findings past SLA
     and follow-ups due, and important dates coming up. Each is sent once."""
@@ -184,6 +188,7 @@ async def research_job(_: dict[str, Any], *, report_id: str) -> str:
         return report.status
 
 
+@tracked("purge_expired_sessions")
 async def purge_expired_sessions(_: dict[str, Any]) -> int:
     """Delete sessions that expired or were revoked more than 30 days ago."""
     cutoff = datetime.now(UTC) - timedelta(days=30)
@@ -199,6 +204,7 @@ async def purge_expired_sessions(_: dict[str, Any]) -> int:
     return removed
 
 
+@tracked("automation_tick")
 async def automation_tick(_: dict[str, Any]) -> int:
     from app.ai.gateway import get_gateway
     from app.ai.tools.builtin import get_registry
@@ -208,8 +214,25 @@ async def automation_tick(_: dict[str, Any]) -> int:
         return await automation_engine.tick(db, get_gateway(), get_registry())
 
 
+async def worker_heartbeat(_: dict[str, Any]) -> None:
+    """Every minute: tell the API this worker is alive (Settings, then System status)."""
+    await heartbeat()
+
+
+@tracked("monitor_tick")
+async def monitor_tick(_: dict[str, Any]) -> int:
+    """Every five minutes: alert the owner about checks that keep failing, and recoveries."""
+    from app.services import monitor
+
+    async with get_sessionmaker()() as db:
+        sent = await monitor.alert_tick(db)
+        await db.commit()
+    return sent
+
+
 async def startup(_: dict[str, Any]) -> None:
     configure_logging(get_settings().log_level)
+    await heartbeat()
 
 
 async def shutdown(_: dict[str, Any]) -> None:
@@ -227,17 +250,21 @@ class WorkerSettings:
         process_document,
         research_job,
         automation_tick,
+        worker_heartbeat,
+        monitor_tick,
     ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(purge_expired_sessions, hour={3}, minute={15}),  # type: ignore[arg-type]
         cron(
-            sync_all,
+            sync_all,  # type: ignore[arg-type]
             minute=set(range(0, 60, max(1, get_settings().sync_interval_minutes))),
             run_at_startup=True,
         ),
         cron(briefing_tick, minute=set(range(0, 60, 5))),  # type: ignore[arg-type]
         cron(reminders_tick, minute={7}),  # type: ignore[arg-type]
         cron(automation_tick, second={30}),  # type: ignore[arg-type]  # every minute
+        cron(worker_heartbeat, second={0}),  # type: ignore[arg-type]  # every minute
+        cron(monitor_tick, minute=set(range(2, 60, 5))),  # type: ignore[arg-type]
     ]
     on_startup = startup
     on_shutdown = shutdown
