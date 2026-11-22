@@ -148,6 +148,16 @@ Automations runs routines on a schedule (daily, chosen weekdays, monthly, or eve
 
 Analytics shows what needs attention (overdue tasks, email waiting over two days, calendar conflicts, overloaded days, tasks you keep postponing) and how the last 7, 30 or 90 days went: tasks, where your time went, habits, goals, the next two weeks' workload, money and fitness. Everything comes from what you've recorded, and money and health figures never leave your PC. Briefing now has a midday check-in, an evening review and a monthly report on the 1st, each with its own time in the schedule card; the worker delivers them.
 
+## Security checks and agent evals
+
+`docs/SECURITY-REVIEW.md` lists every tool that changes something outside NEXUS and how it is guarded. To check how well your local model picks tools, run the agent evals against it (they use a separate `nexus_eval` database and never touch your data):
+
+```
+cd services/api
+createdb nexus_eval && psql nexus_eval -c "CREATE EXTENSION vector"
+NEXUS_DATABASE_URL=postgresql+asyncpg://nexus:nexus@localhost:5432/nexus_eval uv run python -m evals.run
+```
+
 ## Windows app
 
 The Windows app shows NEXUS in its own window, adds a tray icon, makes Ctrl+Shift+Space work from any app, shows Windows notifications, and starts the local agent.

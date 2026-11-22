@@ -159,6 +159,12 @@ async def tasks_complete(ctx: ToolContext, args: TaskIdIn) -> dict[str, Any]:
     return {"task": task_out(task), "next_occurrence": task_out(nxt) if nxt else None}
 
 
+async def tasks_delete_describe(ctx: ToolContext, args: TaskIdIn) -> str:
+    task = await task_svc.get_owned_task(ctx.db, ctx.user.id, uuid.UUID(args.task_id))
+    subs = (await task_svc.subtask_counts(ctx.db, [task.id])).get(task.id, (0, 0))[0]
+    return f"Delete task “{_short(task.title)}”" + (f" and its {subs} subtasks" if subs else "")
+
+
 async def tasks_delete(ctx: ToolContext, args: TaskIdIn) -> dict[str, Any]:
     task = await task_svc.get_owned_task(ctx.db, ctx.user.id, uuid.UUID(args.task_id))
     title = task.title
@@ -240,6 +246,11 @@ class MemoryForgetIn(_In):
     memory_id: str
 
 
+async def memory_forget_describe(ctx: ToolContext, args: MemoryForgetIn) -> str:
+    item = await mem.get_owned(ctx.db, ctx.user.id, uuid.UUID(args.memory_id))
+    return f"Forget “{_short(item.content)}”"
+
+
 async def memory_forget(ctx: ToolContext, args: MemoryForgetIn) -> dict[str, Any]:
     item = await mem.get_owned(ctx.db, ctx.user.id, uuid.UUID(args.memory_id))
     content = item.content
@@ -312,6 +323,7 @@ def build_registry() -> ToolRegistry:
             TaskIdIn,
             tasks_delete,
             lambda a: "Delete a task",
+            describe=tasks_delete_describe,
         )
     )
     r.register(
@@ -362,6 +374,7 @@ def build_registry() -> ToolRegistry:
             MemoryForgetIn,
             memory_forget,
             lambda a: "Forget a memory",
+            describe=memory_forget_describe,
         )
     )
     from app.ai.tools import comms, insight, life, operator, workspace

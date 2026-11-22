@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.types import BudgetExceededError, ModelRequest, ModelUnavailableError
+from app.ai.untrusted import neutral
 from app.core.config import get_settings
 from app.models import (
     ApprovalRequest,
@@ -224,7 +225,9 @@ async def morning(
             req=ModelRequest(
                 model="",
                 system=[{"type": "text", "text": BRIEFING_SYSTEM.format(name=user.display_name)}],
-                messages=[{"role": "user", "content": f"<facts>{json.dumps(data)}</facts>"}],
+                messages=[
+                    {"role": "user", "content": f"<facts>{neutral(json.dumps(data))}</facts>"}
+                ],
                 max_tokens=900,
             ),
             user_id=user.id,
@@ -377,7 +380,9 @@ async def weekly_report(
                 req=ModelRequest(
                     model="",
                     system=[{"type": "text", "text": REPORT_SYSTEM.format(name=user.display_name)}],
-                    messages=[{"role": "user", "content": f"<facts>{json.dumps(data)}</facts>"}],
+                    messages=[
+                        {"role": "user", "content": f"<facts>{neutral(json.dumps(data))}</facts>"}
+                    ],
                     max_tokens=1200,
                 ),
                 user_id=user.id,

@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.ai.gateway import get_gateway
 from app.ai.tools.registry import Tool, ToolContext, ToolRegistry
+from app.ai.untrusted import neutral
 from app.integrations import github
 from app.services import audit, computer, operator, research, web
 
@@ -96,7 +97,7 @@ async def files_read(ctx: ToolContext, a: PathIn) -> dict[str, Any]:
     operator.folder_for(policy, a.path, write=False)
     out = await _send(ctx, "files_read", {"path": a.path, "max_chars": 20000})
     text = str(out.pop("text", ""))
-    out["content"] = f'<file path="{html.escape(a.path)}">\n{text}\n</file>'
+    out["content"] = f'<file path="{html.escape(a.path)}">\n{neutral(text)}\n</file>'
     return {"note": UNTRUSTED, **out}
 
 

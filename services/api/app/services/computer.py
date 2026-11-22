@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import get_gateway
 from app.ai.types import ModelRequest
+from app.ai.untrusted import neutral
 from app.models import Device
 from app.services import operator
 
@@ -88,7 +89,7 @@ async def run(
     db: AsyncSession, user_id: uuid.UUID, device: Device, task: str, max_steps: int = 30
 ) -> Outcome:
     gw = get_gateway()
-    messages: list[dict[str, Any]] = [{"role": "user", "content": f"<task>{task}</task>"}]
+    messages: list[dict[str, Any]] = [{"role": "user", "content": f"<task>{neutral(task)}</task>"}]
     outcome = Outcome(summary="")
     for _ in range(max_steps):
         _prune(messages)

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.types import ModelRequest
+from app.ai.untrusted import neutral
 from app.models import ResearchReport
 from app.services import web
 
@@ -102,7 +103,7 @@ async def _queries(db: AsyncSession, gw: ModelGateway, report: ResearchReport) -
     req = ModelRequest(
         model="",
         system=[{"type": "text", "text": QUERIES_SYSTEM}],
-        messages=[{"role": "user", "content": f"<question>{report.question}</question>"}],
+        messages=[{"role": "user", "content": f"<question>{neutral(report.question)}</question>"}],
         max_tokens=300,
         effort="low",
         json_schema=QUERIES_SCHEMA,
@@ -152,7 +153,8 @@ async def run(db: AsyncSession, gw: ModelGateway, report: ResearchReport) -> Res
             messages=[
                 {
                     "role": "user",
-                    "content": "\n\n".join(blocks) + f"\n\n<question>{report.question}</question>",
+                    "content": "\n\n".join(blocks)
+                    + f"\n\n<question>{neutral(report.question)}</question>",
                 }
             ],
             max_tokens=4000,

@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 import httpx
 
 from app.ai import parsers
+from app.ai.untrusted import neutral
 from app.core.config import get_settings
 from app.services.email import html_to_text
 
@@ -156,5 +157,5 @@ def _page(url: str, body: bytes, ctype: str, max_chars: int) -> Page:
 def wrap_page(page: Page) -> str:
     return (
         f'<web_page url="{html.escape(page.url)}" title="{html.escape(page.title)}">\n'
-        f"{page.text}\n</web_page>"
+        f"{neutral(page.text)}\n</web_page>"
     )

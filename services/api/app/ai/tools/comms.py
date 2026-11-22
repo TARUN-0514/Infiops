@@ -90,6 +90,20 @@ async def email_send(ctx: ToolContext, a: EmailSendIn) -> dict[str, Any]:
     return {"sent": True, "to": d.to_addrs, "subject": d.subject}
 
 
+async def email_send_describe(ctx: ToolContext, a: EmailSendIn) -> str:
+    d = await mail.get_owned_draft(ctx.db, ctx.user.id, a.draft_id)
+    to = ", ".join(d.to_addrs) or "no recipients"
+    cc = f" (cc {', '.join(d.cc_addrs)})" if d.cc_addrs else ""
+    return f"Send “{d.subject or '(no subject)'}” to {to}{cc}"
+
+
+async def email_send_lock(ctx: ToolContext, a: EmailSendIn) -> None:
+    d = await mail.get_owned_draft(ctx.db, ctx.user.id, a.draft_id)
+    if d.status not in ("draft", "failed", "pending_approval"):
+        raise ValueError(f"This draft is already {d.status}.")
+    d.status = "pending_approval"
+
+
 async def email_send_rejected(ctx: ToolContext, a: EmailSendIn) -> None:
     d = await ctx.db.get(EmailDraft, a.draft_id)
     if d is not None and d.user_id == ctx.user.id and d.status == "pending_approval":
@@ -227,6 +241,27 @@ class EventIdIn(_In):
     event_id: uuid.UUID
 
 
+async def _event_label(ctx: ToolContext, event_id: uuid.UUID) -> str:
+    ev = await cal.get_owned(ctx.db, ctx.user.id, event_id)
+    when = ev.starts_at.astimezone(ZoneInfo(ctx.user.timezone)).strftime("%a %d %b %H:%M")
+    return f"“{ev.title}” ({'all day ' + when[:10] if ev.all_day else when})"
+
+
+async def calendar_delete_describe(ctx: ToolContext, a: EventIdIn) -> str:
+    return f"Delete {await _event_label(ctx, a.event_id)}"
+
+
+async def calendar_update_describe(ctx: ToolContext, a: EventMoveIn) -> str:
+    changes = [
+        f"start {a.start.replace('T', ' ')}" if a.start else "",
+        f"{a.minutes} min long" if a.minutes else "",
+        f"rename to “{a.title}”" if a.title else "",
+    ]
+    return f"Change {await _event_label(ctx, a.event_id)}: " + (
+        ", ".join(c for c in changes if c) or "no changes"
+    )
+
+
 async def calendar_delete_event(ctx: ToolContext, a: EventIdIn) -> dict[str, Any]:
     ev = await cal.get_owned(ctx.db, ctx.user.id, a.event_id)
     title = ev.title
@@ -325,6 +360,8 @@ def register(r: ToolRegistry) -> None:
             email_send,
             lambda a: "Send an email",
             on_reject=email_send_rejected,
+            describe=email_send_describe,
+            on_request=email_send_lock,
         )
     )
     add(
@@ -375,6 +412,7 @@ def register(r: ToolRegistry) -> None:
             EventMoveIn,
             calendar_update_event,
             lambda a: "Change an event",
+            describe=calendar_update_describe,
         )
     )
     add(
@@ -385,6 +423,7 @@ def register(r: ToolRegistry) -> None:
             EventIdIn,
             calendar_delete_event,
             lambda a: "Delete an event",
+            describe=calendar_delete_describe,
         )
     )
     add(

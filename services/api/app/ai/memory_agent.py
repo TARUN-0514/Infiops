@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.types import ModelRequest
+from app.ai.untrusted import neutral
 from app.models import MemoryItem, User
 from app.models.memory import MEMORY_CATEGORIES
 from app.services import memory as mem
@@ -90,9 +91,9 @@ async def extract_and_store(
             {
                 "role": "user",
                 "content": (
-                    f"<existing_memories>\n{existing}\n</existing_memories>\n"
-                    f"<user_message>{user_text}</user_message>\n"
-                    f"<assistant_reply>{assistant_text[:2000]}</assistant_reply>"
+                    f"<existing_memories>\n{neutral(existing)}\n</existing_memories>\n"
+                    f"<user_message>{neutral(user_text)}</user_message>\n"
+                    f"<assistant_reply>{neutral(assistant_text[:2000])}</assistant_reply>"
                 ),
             }
         ],

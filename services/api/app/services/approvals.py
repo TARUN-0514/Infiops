@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.tools.registry import ToolContext, ToolRegistry
+from app.ai.tools.registry import ToolContext, ToolRegistry, approval_summary
 from app.core.config import get_settings
 from app.core.logging import log
 from app.models import ApprovalRequest, ToolExecution, User
@@ -22,6 +22,7 @@ async def request(
     if tool is None or tool.risk == "forbidden":
         raise ValueError("This action isn't available.")
     parsed = tool.input_model.model_validate(args)
+    summary = await approval_summary(tool, ToolContext(db, user), parsed)
     exe = ToolExecution(
         user_id=user.id,
         run_id=None,
@@ -39,7 +40,7 @@ async def request(
         tool_execution_id=exe.id,
         tool_name=tool.name,
         risk=tool.risk,
-        summary=tool.summary(parsed),
+        summary=summary,
         input=args,
         expires_at=datetime.now(UTC) + timedelta(hours=get_settings().approval_ttl_hours),
     )
@@ -84,4 +85,5 @@ async def decide(
     else:
         exe.status, exe.output = "succeeded", output
     exe.finished_at = datetime.now(UTC)
+    audit.tool_run(db, user.id, exe, via="approval")
     return {"status": exe.status, "output": exe.output, "error": exe.error}

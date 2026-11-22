@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.types import BudgetExceededError, ModelRequest, ModelUnavailableError
+from app.ai.untrusted import neutral
 from app.models import Briefing, EmailMessage, Habit, HabitLog, Task, User, WorkLog
 from app.services import analytics, notify
 from app.services import calendar as cal
@@ -368,7 +369,9 @@ async def write(
             req=ModelRequest(
                 model="",
                 system=[{"type": "text", "text": SYSTEMS[kind].format(name=user.display_name)}],
-                messages=[{"role": "user", "content": f"<facts>{json.dumps(data)}</facts>"}],
+                messages=[
+                    {"role": "user", "content": f"<facts>{neutral(json.dumps(data))}</facts>"}
+                ],
                 max_tokens=1200 if kind == "monthly" else 700,
             ),
             user_id=user.id,

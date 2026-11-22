@@ -15,8 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.timeutil import now_local
-from app.ai.tools.registry import ToolContext, ToolRegistry, decide
+from app.ai.tools.registry import ToolContext, ToolRegistry, approval_summary, decide
 from app.ai.types import BudgetExceededError, ModelRequest, ModelUnavailableError
+from app.ai.untrusted import neutral
 from app.core.config import get_settings
 from app.core.logging import log
 from app.models import (
@@ -160,8 +161,14 @@ async def _tool_step(
     await db.flush()
     if decision == "deny":
         exe.status = "denied"
+        audit.tool_run(db, user.id, exe, via="automation")
         raise StepFailed(f"{tool.name} is blocked by your permission settings.", retry=False)
     if decision == "ask":
+        try:
+            summary = await approval_summary(tool, ToolContext(db, user), parsed)
+        except (LookupError, ValueError) as exc:
+            exe.status, exe.error, exe.finished_at = "failed", str(exc), _now()
+            raise StepFailed(str(exc), retry=False) from exc
         exe.status = "pending_approval"
         approval = ApprovalRequest(
             user_id=user.id,
@@ -170,7 +177,7 @@ async def _tool_step(
             tool_execution_id=exe.id,
             tool_name=tool.name,
             risk=tool.risk,
-            summary=tool.summary(parsed),
+            summary=summary,
             input=args,
             expires_at=_now() + timedelta(hours=get_settings().approval_ttl_hours),
         )
@@ -201,15 +208,18 @@ async def _tool_step(
             output = await tool.handler(ToolContext(db, user), parsed)
     except (LookupError, ValueError) as exc:
         exe.status, exe.error, exe.finished_at = "failed", str(exc), _now()
+        audit.tool_run(db, user.id, exe, via="automation")
         raise StepFailed(str(exc)) from exc
     except Exception as exc:
         log.exception("automation_tool_failed", tool=tool.name)
         exe.status, exe.error, exe.finished_at = "failed", type(exc).__name__, _now()
+        audit.tool_run(db, user.id, exe, via="automation")
         raise StepFailed(f"{tool.name} failed ({type(exc).__name__}).") from exc
     finally:
         _running.reset(token)
     out = json.loads(json.dumps(output, default=str))
     exe.status, exe.output, exe.finished_at = "succeeded", out, _now()
+    audit.tool_run(db, user.id, exe, via="automation")
     return dict(out) if isinstance(out, dict) else {"result": out}
 
 
@@ -229,7 +239,7 @@ async def _agent_step(
                     {
                         "role": "user",
                         "content": f"{render(str(cfg['prompt']), scope)}\n\n"
-                        f"<data>{json.dumps(data, default=str)[:12000]}</data>",
+                        f"<data>{neutral(json.dumps(data, default=str)[:12000])}</data>",
                     }
                 ],
                 max_tokens=1200,

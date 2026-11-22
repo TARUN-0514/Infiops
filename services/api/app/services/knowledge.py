@@ -17,6 +17,7 @@ from app.ai import parsers
 from app.ai.embeddings import get_embedder
 from app.ai.gateway import ModelGateway
 from app.ai.types import ModelRequest, ModelUnavailableError
+from app.ai.untrusted import attr, neutral
 from app.core.config import get_settings
 from app.core.logging import log
 from app.models import Document, DocumentChunk, User
@@ -174,7 +175,7 @@ async def process(db: AsyncSession, gateway: ModelGateway, doc: Document) -> Doc
             req=ModelRequest(
                 model="",
                 system=[{"type": "text", "text": SUMMARY_SYSTEM}],
-                messages=[{"role": "user", "content": f"<document>\n{head}\n</document>"}],
+                messages=[{"role": "user", "content": f"<document>\n{neutral(head)}\n</document>"}],
                 max_tokens=300,
                 effort="low",
             ),
@@ -285,9 +286,9 @@ async def ask(
             "citations": [],
         }
     passages = "\n\n".join(
-        f'<passage n="{i + 1}" document="{h.document.title}"'
+        f'<passage n="{i + 1}" document="{attr(h.document.title)}"'
         f"{f' where={json.dumps(citation(i + 1, h)["where"])}' if citation(i + 1, h)['where'] else ''}>"
-        f"\n{h.chunk.content}\n</passage>"
+        f"\n{neutral(h.chunk.content)}\n</passage>"
         for i, h in enumerate(hits)
     )
     resp = await gateway.complete(
@@ -299,7 +300,7 @@ async def ask(
             messages=[
                 {
                     "role": "user",
-                    "content": f"<passages>\n{passages}\n</passages>\n\nQuestion: {question}",
+                    "content": f"<passages>\n{passages}\n</passages>\n\nQuestion: {question}",  # already neutral
                 }
             ],
             max_tokens=1500,

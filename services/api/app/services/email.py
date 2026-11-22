@@ -17,9 +17,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.gateway import ModelGateway
 from app.ai.types import ModelRequest
+from app.ai.untrusted import neutral
 from app.core.config import get_settings
 from app.integrations.google import GoogleClient, GoogleError
-from app.models import ConnectedAccount, EmailDraft, EmailMessage, Task, User
+from app.models import ApprovalRequest, ConnectedAccount, EmailDraft, EmailMessage, Task, User
 from app.models.comms import EMAIL_CATEGORIES
 from app.services import audit
 from app.services import integrations as integ
@@ -167,12 +168,12 @@ class Triage(BaseModel):
 
 
 def wrap_email(m: EmailMessage, limit: int = 4000) -> str:
-    return (
-        "<email>\n"
+    inner = (
         f"From: {m.from_name} <{m.from_addr}>\nTo: {', '.join(m.to_addrs)}\n"
         f"Date: {m.received_at.isoformat()}\nSubject: {m.subject}\n\n"
-        f"{(m.body_text or m.snippet)[:limit]}\n</email>"
+        f"{(m.body_text or m.snippet)[:limit]}"
     )
+    return f"<email>\n{neutral(inner)}\n</email>"
 
 
 async def triage(db: AsyncSession, gateway: ModelGateway, user: User, *, limit: int = 25) -> int:
@@ -278,7 +279,7 @@ async def draft_reply(
             {
                 "role": "user",
                 "content": wrap_email(message, 6000)
-                + f"\n<instructions>{instructions.strip() or 'Write a suitable reply.'}</instructions>",
+                + f"\n<instructions>{neutral(instructions.strip()) or 'Write a suitable reply.'}</instructions>",
             }
         ],
         max_tokens=1200,
@@ -334,6 +335,24 @@ async def push_draft(db: AsyncSession, draft: EmailDraft) -> None:
     else:
         res = await gc.gmail_create_draft(raw, thread)
         draft.provider_draft_id = res.get("id")
+
+
+async def unlock_if_stale(db: AsyncSession, draft: EmailDraft) -> None:
+    """A draft waits for approval only while a send request for it is still pending.
+    If that request expired or was decided elsewhere, the draft can be edited again."""
+    if draft.status != "pending_approval":
+        return
+    live = await db.scalar(
+        select(ApprovalRequest.id).where(
+            ApprovalRequest.user_id == draft.user_id,
+            ApprovalRequest.tool_name == "email_send",
+            ApprovalRequest.status == "pending",
+            ApprovalRequest.expires_at > datetime.now(UTC),
+            ApprovalRequest.input["draft_id"].astext == str(draft.id),
+        )
+    )
+    if live is None:
+        draft.status, draft.approval_id = "draft", None
 
 
 async def send(db: AsyncSession, user: User, draft: EmailDraft) -> EmailDraft:
