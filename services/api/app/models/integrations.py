@@ -9,11 +9,13 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -68,6 +70,10 @@ class IntegrationSyncLog(UUIDPk, Base):
 
 class Notification(UUIDPk, CreatedAt, Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_created", "user_id", "created_at"),
+        Index("ix_notifications_unread", "user_id", postgresql_where=text("read_at IS NULL")),
+    )
 
     user_id: Mapped[uuid.UUID] = _user_fk()
     kind: Mapped[str] = mapped_column(String(32), nullable=False)  # briefing, approval, ...

@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -42,6 +43,12 @@ class Task(UUIDPk, CreatedAt, Base):
         CheckConstraint("status IN ('todo','in_progress','done','cancelled')", name="status"),
         CheckConstraint("priority IN ('none','low','medium','high','urgent')", name="priority"),
         Index("ix_tasks_user_status_due", "user_id", "status", "due_at"),
+        Index(
+            "ix_tasks_user_completed",
+            "user_id",
+            "completed_at",
+            postgresql_where=text("completed_at IS NOT NULL"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(

@@ -27,6 +27,7 @@ from app.api.routes import (
     operator,
     personal,
     preferences,
+    status,
     voice,
     work,
     workspaces,
@@ -34,6 +35,7 @@ from app.api.routes import (
 from app.core.config import get_settings
 from app.core.logging import configure_logging, log
 from app.db.session import dispose_engine
+from app.services import monitor
 from app.services.jobs import close_jobs
 from app.services.redis import close_redis
 
@@ -88,6 +90,9 @@ def create_app() -> FastAPI:
         start = time.perf_counter()
         try:
             response = await call_next(request)
+        except Exception:
+            await monitor.note_request(500, (time.perf_counter() - start) * 1000)
+            raise
         finally:
             structlog.contextvars.clear_contextvars()
         response.headers["X-Request-ID"] = request_id
@@ -95,14 +100,19 @@ def create_app() -> FastAPI:
             response.headers.setdefault(name, value)
         if settings.cookie_secure:
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
-        log.info(
-            "request",
+        ms = round((time.perf_counter() - start) * 1000, 1)
+        # Streaming replies (chat) return here at the first byte, so this is time to answer.
+        slow = ms >= settings.slow_request_ms
+        (log.warning if slow or response.status_code >= 500 else log.info)(
+            "slow_request" if slow else "request",
             method=request.method,
             path=request.url.path,
             status=response.status_code,
-            ms=round((time.perf_counter() - start) * 1000, 1),
+            ms=ms,
             request_id=request_id,
         )
+        if request.url.path.startswith(API_PREFIX):
+            await monitor.note_request(response.status_code, ms)
         return response
 
     @app.exception_handler(HTTPException)
@@ -152,6 +162,7 @@ def create_app() -> FastAPI:
         personal,
         automations,
         analytics,
+        status,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     return app

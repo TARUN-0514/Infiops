@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -44,6 +45,21 @@ class EmailMessage(UUIDPk, CreatedAt, Base):
         UniqueConstraint("account_id", "provider_id", name="uq_email_provider"),
         Index("ix_email_user_received", "user_id", "received_at"),
         Index("ix_email_messages_search", "search", postgresql_using="gin"),
+        # Small partial indexes for the inbox counts and reply checks, which otherwise
+        # scan a year of mail on every page load (Phase 7 measurements).
+        Index(
+            "ix_email_awaiting_reply",
+            "user_id",
+            "received_at",
+            postgresql_where=text("needs_reply AND replied_at IS NULL"),
+        ),
+        Index("ix_email_unread", "user_id", postgresql_where=text("is_unread")),
+        Index("ix_email_untriaged", "user_id", postgresql_where=text("triaged_at IS NULL")),
+        Index(
+            "ix_email_important_open",
+            "user_id",
+            postgresql_where=text("priority = 'high' AND replied_at IS NULL"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = _user_fk()

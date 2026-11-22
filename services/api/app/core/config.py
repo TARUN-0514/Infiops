@@ -63,6 +63,12 @@ class Settings(BaseSettings):
     # Background jobs run inline (tests, or when no worker is running).
     jobs_inline: bool = False
     storage_dir: str = "./data/uploads"
+    # Nightly backups are written here by the backup service (docker compose); the API
+    # only reads the manifests to report and alert on backup age.
+    backup_dir: str = "./data/backups"
+    backup_max_age_hours: int = 36
+    # Requests slower than this are logged as warnings and counted on the status page.
+    slow_request_ms: int = 1500
     max_upload_mb: int = 10
     # Optional local vision model (e.g. qwen2.5vl:7b) to read text from images in the
     # knowledge base. Empty = images are stored but not read.
