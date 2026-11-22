@@ -12,3 +12,10 @@ describe("navigation", () => {
     expect(new Set(NAV.map((n) => n.href)).size).toBe(NAV.length);
   });
 });
+
+describe("phase 6", () => {
+  it("has every module built, so none shows a coming-soon page", async () => {
+    const { NAV: all, isComing } = await import("./nav");
+    expect(all.filter(isComing)).toEqual([]);
+  });
+});

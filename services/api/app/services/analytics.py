@@ -161,7 +161,8 @@ async def time_allocation(
     unlogged = 0
     for w in logs:
         if not w.minutes:
-            unlogged += 1
+            # Entries written automatically when a task is completed carry no time.
+            unlogged += w.source != "task"
             continue
         work[projects.get(w.project_id, "No project") if w.project_id else "No project"] += (
             w.minutes

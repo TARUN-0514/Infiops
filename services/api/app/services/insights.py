@@ -187,7 +187,7 @@ async def detect(db: AsyncSession, user: User, now: datetime | None = None) -> l
                     {
                         "id": str(t.id),
                         "label": t.title,
-                        "sub": f"due {_local(t.due_at, tz).date().isoformat()}"
+                        "sub": f"due {_local(t.due_at, tz):%d %b}"
                         + (f", pushed back {t.postponed_count}x" if t.postponed_count else ""),
                         "link": "/tasks",
                     }

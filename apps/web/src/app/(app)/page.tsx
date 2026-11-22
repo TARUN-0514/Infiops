@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AskBar } from "@/components/home/ask-bar";
 import { TodayCard } from "@/components/home/today-card";
 import { InboxCard, ScheduleCard } from "@/components/home/schedule-card";
+import { InsightsHomeCard } from "@/components/analytics/insights";
 import { BriefingHomeCard } from "@/components/briefing/briefing";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Dashboard, type Widget } from "@/components/home/dashboard";
@@ -32,6 +33,7 @@ export default function HomePage() {
   const upcoming = NAV.filter(isComing).sort((a, b) => a.phase - b.phase).slice(0, 4);
   const widgets: Widget[] = [
     { id: "briefing", title: "Morning briefing", size: "m", render: () => <BriefingHomeCard /> },
+    { id: "attention", title: "Needs attention", size: "m", render: () => <InsightsHomeCard /> },
     { id: "schedule", title: "Schedule", size: "m", render: () => <ScheduleCard tz={tz} /> },
     { id: "today", title: "Today's tasks", size: "m", render: () => <TodayCard tz={tz} /> },
     { id: "inbox", title: "Inbox", size: "m", render: () => <InboxCard /> },
@@ -55,7 +57,9 @@ export default function HomePage() {
         </Card>
       ),
     },
-    {
+  ];
+  if (upcoming.length)
+    widgets.push({
       id: "next",
       title: "Being built next",
       size: "m",
@@ -74,8 +78,7 @@ export default function HomePage() {
           </ul>
         </Card>
       ),
-    },
-  ];
+    });
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-5xl space-y-6">

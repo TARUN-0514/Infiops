@@ -105,41 +105,58 @@ export function BriefingToday() {
   );
 }
 
+type Toggle = "enabled" | "midday" | "evening";
+type TimeKey = "time" | "midday_time" | "evening_time";
+
+function ScheduleRow({ s, on, at, label, save }: { s: BriefingSettings; on: Toggle; at: TimeKey; label: string; save: (b: Partial<BriefingSettings>) => void }) {
+  const [time, setTime] = useState(s[at]);
+  useEffect(() => setTime(s[at]), [s, at]);
+  const id = `sched-${at}`;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="flex min-w-36 flex-1 items-center gap-2">
+        <input type="checkbox" checked={s[on]} onChange={(e) => save({ [on]: e.target.checked })} className="size-4 accent-accent" />
+        {label}
+      </label>
+      <label htmlFor={id} className="sr-only">{label} time</label>
+      <input id={id} type="time" value={time} disabled={!s[on]} onChange={(e) => setTime(e.target.value)} className="h-9 rounded-lg border border-border bg-surface px-2 disabled:opacity-50" />
+      {time !== s[at] && <Button variant="secondary" className="h-9" onClick={() => save({ [at]: time })}>Save</Button>}
+    </div>
+  );
+}
+
 export function BriefingSettingsCard() {
   const qc = useQueryClient();
   const today = useToday();
-  const [time, setTime] = useState("07:30");
   const [saved, setSaved] = useState(false);
   const s = today.data?.settings;
-  useEffect(() => {
-    if (s) setTime(s.time);
-  }, [s]);
   const save = useMutation({
     mutationFn: (body: Partial<BriefingSettings>) => api<BriefingSettings>("/briefings/settings", { method: "PUT", body }),
     onSuccess: () => {
       setSaved(true);
-      void qc.invalidateQueries({ queryKey: ["briefing", "today"] });
+      void qc.invalidateQueries({ queryKey: ["briefing"] });
     },
   });
   if (!s) return null;
   return (
     <Card>
-      <CardTitle>Schedule</CardTitle>
+      <div className="flex items-center justify-between">
+        <CardTitle>Schedule</CardTitle>
+        {saved && !save.isPending && <span className="text-xs text-good">Saved</span>}
+      </div>
       <div className="mt-3 space-y-3 text-sm">
+        <ScheduleRow s={s} on="enabled" at="time" label="Morning briefing" save={save.mutate} />
+        <ScheduleRow s={s} on="midday" at="midday_time" label="Midday check-in" save={save.mutate} />
+        <ScheduleRow s={s} on="evening" at="evening_time" label="Evening review" save={save.mutate} />
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={s.enabled} onChange={(e) => save.mutate({ enabled: e.target.checked })} className="size-4 accent-accent" />
-          Write my briefing every morning
+          <input type="checkbox" checked={s.monthly} onChange={(e) => save.mutate({ monthly: e.target.checked })} className="size-4 accent-accent" />
+          Monthly report on the 1st
         </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor="briefing-time" className="text-muted">Time</label>
-          <input id="briefing-time" type="time" value={time} onChange={(e) => { setTime(e.target.value); setSaved(false); }} className="h-9 rounded-lg border border-border bg-surface px-2" />
-          <Button variant="secondary" className="h-9" onClick={() => save.mutate({ time })} loading={save.isPending} disabled={time === s.time}>Save</Button>
-          {saved && <span className="text-xs text-good">Saved</span>}
-        </div>
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 border-t border-border pt-3">
           <input type="checkbox" checked={s.push} onChange={(e) => save.mutate({ push: e.target.checked })} className="size-4 accent-accent" />
-          Send a notification when it&apos;s ready
+          Send a notification when each is ready
         </label>
+        {save.isError && <Alert>Couldn&apos;t save. Check the time and try again.</Alert>}
         <p className="text-xs text-muted">
           Notifications need to be on for this device in <Link href="/settings/integrations" className="text-accent hover:underline">Settings › Integrations</Link>.
         </p>
@@ -148,15 +165,18 @@ export function BriefingSettingsCard() {
   );
 }
 
-export function BriefingHistory() {
-  const q = useQuery({ queryKey: ["briefing", "history"], queryFn: () => api<Briefing[]>("/briefings") });
+const HISTORY_TITLE = { morning: "Earlier briefings", midday: "Earlier check-ins", evening: "Earlier reviews" };
+
+export function BriefingHistory({ kind = "morning" }: { kind?: "morning" | "midday" | "evening" }) {
+  const q = useQuery({ queryKey: ["briefing", "history", kind], queryFn: () => api<Briefing[]>(`/briefings?kind=${kind}`) });
   const [open, setOpen] = useState<string | null>(null);
-  const past = (q.data ?? []).slice(1);
+  const day = useToday().data?.date;
+  const past = (q.data ?? []).filter((b) => b.for_date !== day);
   return (
     <Card>
-      <CardTitle>Earlier briefings</CardTitle>
+      <CardTitle>{HISTORY_TITLE[kind]}</CardTitle>
       {q.isLoading ? <Skeleton className="mt-3 h-16" /> : !past.length ? (
-        <p className="mt-2 text-sm text-muted">Past briefings will collect here.</p>
+        <p className="mt-2 text-sm text-muted">Past ones will collect here.</p>
       ) : (
         <ul className="mt-2 divide-y divide-border">
           {past.map((b) => (

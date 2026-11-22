@@ -302,7 +302,7 @@ export type WorkLogEntry = {
 
 export type Briefing = {
   id: string;
-  kind: "morning" | "weekly_status";
+  kind: "morning" | "midday" | "evening" | "weekly_status" | "monthly";
   for_date: string;
   content: string;
   data: Record<string, unknown>;
@@ -312,7 +312,16 @@ export type Briefing = {
   read_at: string | null;
 };
 
-export type BriefingSettings = { enabled: boolean; time: string; push: boolean };
+export type BriefingSettings = {
+  enabled: boolean;
+  time: string;
+  push: boolean;
+  midday: boolean;
+  midday_time: string;
+  evening: boolean;
+  evening_time: string;
+  monthly: boolean;
+};
 
 export type AppNotification = {
   id: string;

@@ -84,7 +84,7 @@ export const NAV: NavItem[] = [
     coming: ["Work log and weekly status report", "Vulnerability findings with SLA and aging", "AppSec, cloud and pentest boards; OSCP study track"],
   },
   {
-    slug: "automations", href: "/automations", label: "Automations", icon: Workflow, phase: 6, ready: true,
+    slug: "automations", href: "/automations", label: "Automations", icon: Workflow, phase: 6,
     summary: "Routines that run on a schedule or when something happens.",
     coming: ["Workflows written in plain language", "Approval checkpoints and run history", "Visual workflow builder"],
   },
@@ -96,7 +96,7 @@ export const NAV: NavItem[] = [
   { slug: "settings", href: "/settings", label: "Settings", icon: Settings, phase: 0, summary: "Profile, appearance and security.", coming: [] },
 ];
 
-export const CURRENT_PHASE = 5;
+export const CURRENT_PHASE = 6;
 
 /** Not built yet: shows a "coming in phase N" page and a badge in the menu. */
 export function isComing(n: NavItem): boolean {
